@@ -1,0 +1,796 @@
+:root {
+    --primary: #4CAF50;
+    --primary-dark: #2E7D32;
+    --secondary: #8BC34A;
+    --white: #ffffff;
+    --gray: #f5f5f5;
+    --dark: #333333;
+}
+
+
+.mobile-custom-alert {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-width: 80%;
+    text-align: center;
+}
+
+.custom-alert.success,
+.mobile-custom-alert.success {
+    background-color: #4CAF50;
+}
+
+.custom-alert.error,
+.mobile-custom-alert.error {
+    background-color: #F44336;
+}
+
+/* Versión Desktop */
+.desktop-login {
+    display: block;
+}
+
+/* Versión Móvil - oculta por defecto */
+.mobile-login {
+    display: none;
+}
+
+/* Estilos específicos para móvil */
+.mobile-login-container {
+    padding: 20px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.mobile-logo-container {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.mobile-logo-image {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+}
+
+.mobile-logo-title {
+    font-size: 24px;
+    margin: 5px 0;
+}
+
+.mobile-logo-main {
+    color: #333;
+}
+
+.mobile-logo-accent {
+    color: #4CAF50;
+}
+
+.mobile-logo-sub {
+    color: #2196F3;
+    font-size: 20px;
+}
+
+.mobile-logo-subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.mobile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.mobile-input-field {
+    position: relative;
+}
+
+.mobile-input-icon-wrapper {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.mobile-input,
+.mobile-select {
+    width: 100%;
+    padding: 12px 12px 12px 40px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    background-color: #f9f9f9;
+}
+
+.mobile-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 15px;
+}
+
+.mobile-login-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.mobile-login-btn:hover {
+    background-color: #45a049;
+}
+
+.mobile-tech-text {
+    text-align: center;
+    margin-top: 30px;
+    color: #666;
+}
+
+.mobile-tech-text h3 {
+    color: #333;
+    margin-bottom: 5px;
+}
+
+/* Media queries para mostrar/ocultar según el tamaño de pantalla */
+@media (max-width: 768px) {
+    .desktop-login {
+        display: none;
+    }
+
+    .mobile-login {
+        display: block;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-login {
+        display: none;
+    }
+
+    .desktop-login {
+        display: block;
+    }
+}
+
+.agro-login-container {
+    display: flex;
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+
+}
+
+/* Panel izquierdo */
+
+.login-form-wrapper {
+    width: 380px;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.login-form {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Logo y título */
+.logo-container {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.logo-image {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+}
+
+.logo-title {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #2e7d32, #81c784);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.logo-main {
+    font-weight: 800;
+}
+
+.logo-accent {
+    font-weight: 600;
+    color: #2e7d32;
+}
+
+.logo-subtitle {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Campos de formulario */
+.modern-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+}
+
+.input-field {
+    position: relative;
+
+}
+
+.input-icon-wrapper {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #4CAF50;
+    z-index: 2;
+}
+
+.modern-input {
+    width: 90%;
+    padding: 15px 15px 15px 45px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+}
+
+.modern-select {
+    width: 110%;
+    padding: 15px 15px 15px 45px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+}
+
+.modern-input:focus,
+.modern-select:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.modern-input:focus+.input-label,
+.modern-input:not(:placeholder-shown)+.input-label {
+    transform: translateY(-25px) translateX(-30px) scale(0.85);
+    background: white;
+    padding: 0 5px;
+    color: #4CAF50;
+}
+
+.input-label {
+    position: absolute;
+    left: 45px;
+    top: 15px;
+    color: #999;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+/* Botón moderno */
+.modern-login-btn {
+    position: relative;
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.hover-effect {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2E7D32, #4CAF50);
+    transition: all 0.4s ease;
+    z-index: -1;
+}
+
+.modern-login-btn:hover .hover-effect {
+    left: 0;
+}
+
+.modern-login-btn:active {
+    transform: translateY(2px);
+}
+
+/* Pie de formulario */
+.form-footer {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.forgot-password {
+    color: #666;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.forgot-password:hover {
+    color: #4CAF50;
+}
+
+.signup-text {
+    margin-top: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.signup-link {
+    color: #4CAF50;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* Panel derecho */
+.agro-visual {
+    flex: 1;
+    background: rgb(59, 77, 99);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+
+}
+
+.animated-drone {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: float 6s ease-in-out infinite;
+}
+
+.animated-drone img {
+    width: 80px;
+    height: 80px;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 100, 0.5));
+}
+
+.signal {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    background: rgba(76, 175, 80, 0.3);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    animation: pulse 2s infinite;
+}
+
+.crop-circle {
+    position: relative;
+    width: 350px;
+    height: 350px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ring {
+    position: absolute;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    animation: ripple 3s infinite;
+}
+
+.ring:nth-child(1) {
+    width: 100%;
+    height: 100%;
+    animation-delay: 0s;
+}
+
+.ring:nth-child(2) {
+    width: 70%;
+    height: 70%;
+    animation-delay: 1s;
+}
+
+.ring:nth-child(3) {
+    width: 40%;
+    height: 40%;
+    animation-delay: 2s;
+}
+
+.hombre-logo {
+    font-size: 1rem;
+    z-index: 2;
+}
+
+.hombre-logo img {
+    width: 150px;
+    height: auto;
+}
+
+.floating-elements {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.element {
+    position: absolute;
+    font-size: 1.5rem;
+    animation: float-up 8s linear infinite;
+    opacity: 0.7;
+}
+
+.element:nth-child(1) {
+    top: 80%;
+    left: 20%;
+    animation-delay: var(--delay);
+}
+
+.element:nth-child(2) {
+    top: 70%;
+    left: 80%;
+    animation-delay: var(--delay);
+}
+
+.element:nth-child(3) {
+    top: 60%;
+    left: 50%;
+    animation-delay: var(--delay);
+}
+
+.tech-text {
+    position: absolute;
+    bottom: 50px;
+    text-align: center;
+    color: white;
+}
+
+.tech-text h3 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.tech-text p {
+    opacity: 0.8;
+}
+
+/* Animaciones */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) translateY(0);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) translateY(-20px);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: translateX(-50%) scale(0.8);
+        opacity: 0.7;
+    }
+
+    70% {
+        transform: translateX(-50%) scale(1.3);
+        opacity: 0.2;
+    }
+
+    100% {
+        transform: translateX(-50%) scale(0.8);
+        opacity: 0.7;
+    }
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1.2);
+        opacity: 0;
+    }
+}
+
+@keyframes float-up {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: translateY(-100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@media screen and (min-width: 1024px) and (max-width: 1440px) {
+
+    .agro-login-container {
+        min-height: 100vh;
+        /* Cambiado de height a min-height */
+        height: 100vh;
+        overflow-y: hidden;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-y: hidden;
+        /* Evita que los hijos se desborden */
+    }
+
+    /* Panel izquierdo - formulario */
+    .login-form-wrapper {
+        width: 380px;
+        height: 90vh;
+        /* Altura fija del viewport */
+
+        /* Scroll interno solo si es necesario */
+        padding: 10px;
+        box-sizing: border-box;
+        display: flex;
+        flex-shrink: 0;
+        /* Evita que se reduzca */
+    }
+
+    /* Panel derecho - visual */
+    .agro-visual {
+        flex: 1;
+        height: 103vh;
+        overflow: hidden;
+        /* Elimina scroll interno */
+        position: relative;
+        overflow-y: hidden !important;
+    }
+
+    /* Ajustes específicos para el formulario */
+    .login-form {
+        width: 100%;
+        max-width: 600px;
+        margin: auto;
+        /* Centrado vertical y horizontal */
+        padding: 50px;
+        box-sizing: border-box;
+    }
+
+    /* Optimización de elementos animados */
+    .crop-circle {
+        width: 300px;
+        height: 300px;
+    }
+
+    .animated-drone {
+        top: 15%;
+    }
+}
+
+/* Estilos responsivos para pantallas pequeñas */
+@media screen and (max-width: 768px) {
+    .agro-login-container {
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .agro-visual {
+        order: 2;
+        width: 100%;
+        height: 250px;
+        padding: 1rem;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .crop-circle {
+        width: 200px;
+        height: 200px;
+    }
+
+    .animated-drone {
+        top: 20%;
+    }
+
+    .hombre-logo img {
+        width: 100px;
+    }
+
+    .tech-text h3 {
+        font-size: 1.2rem;
+    }
+
+    .tech-text p {
+        font-size: 0.8rem;
+    }
+
+    .login-form-wrapper {
+        order: 1;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .login-form {
+        max-width: 100%;
+        padding: 2rem 1.5rem;
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+    }
+
+    .modern-input,
+    .modern-select {
+        width: 100%;
+        padding-left: 40px;
+    }
+
+    .modern-select {
+        width: 100%;
+    }
+
+    .input-label {
+        left: 40px;
+    }
+
+    .logo-title {
+        font-size: 1.5rem;
+    }
+
+    .logo-image {
+        width: 50px;
+        height: 50px;
+    }
+
+    .form-footer {
+        font-size: 0.8rem;
+    }
+
+    .element {
+        display: none;
+    }
+
+    .custom-alert {
+        font-size: 0.85rem;
+        padding: 12px 20px;
+    }
+}
+
+.custom-alert {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 30px;
+    margin: 0 auto;
+    border-radius: 8px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-left: 5px solid;
+    background-color: #f8f9fa;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" opacity="0.05"><path d="M30,10 Q50,0 70,10 L90,30 Q100,50 90,70 L70,90 Q50,100 30,90 L10,70 Q0,50 10,30 Z" fill="%23000"/></svg>');
+    background-size: 40px;
+    transition: all 0.4s ease;
+    z-index: 1000;
+    max-width: 80%;
+    text-align: center;
+    animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        top: -100px;
+        opacity: 0;
+    }
+
+    to {
+        top: 20px;
+        opacity: 1;
+    }
+}
+
+.custom-alert::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+/* Estilo para mensajes de éxito (verde agrícola) */
+.custom-alert.success {
+    color: #1e5631;
+    border-color: #4c9a2a;
+    background-color: #e8f5e9;
+}
+
+.custom-alert.success::before {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234c9a2a"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
+}
+
+/* Estilo para mensajes de error (rojo tierra) */
+.custom-alert.error {
+
+    background: #FF6600;
+}
+
+.custom-alert.error::before {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23a23829"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>');
+}
+
+/* Estilo para mensajes de advertencia (amarillo cosecha) */
+.custom-alert.warning {
+    color: #8a6d3b;
+    border-color: #ffc107;
+    background-color: #fff8e1;
+}
+
+.custom-alert.warning::before {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffc107"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>');
+}
+
+/* Estilo para mensajes informativos (azul cielo) */
+.custom-alert.info {
+    color: #31708f;
+    border-color: #5bc0de;
+    background-color: #e7f6f8;
+}
+
+.custom-alert.info::before {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%235bc0de"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>');
+}

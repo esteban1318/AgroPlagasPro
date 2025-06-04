@@ -1,0 +1,331 @@
+/* sidebarMapas.css */
+
+/* Estilos base del sidebar */
+.sidebar-mapas1 {
+  width: 240px;
+  height: 100vh;
+  top: 70px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #dee2e6;
+  padding: 15px;
+  overflow-y: auto;
+  position: relative;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.sidebar-mapas1 {
+  width: 250px;
+  /* ancho cuando está abierto */
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar-mapas1.collapsed {
+  width: 100px;
+  /* ancho cuando está colapsado */
+}
+
+/* Opcional: ocultar texto de los items cuando está colapsado */
+.sidebar-mapas1.collapsed .sidebar-item-text {
+  display: none;
+}
+
+/* Asegúrate que los iconos siempre se muestren */
+.sidebar-mapas1 .sidebar-icon {
+  display: inline-block;
+  width: 30px;
+  /* tamaño de icono */
+  text-align: center;
+}
+
+.sidebar-mapas1.collapsed span,
+.sidebar-mapas1.collapsed input,
+.sidebar-mapas1.collapsed .section-content,
+.sidebar-mapas1.collapsed .new-map-btn span {
+  display: none;
+}
+
+@media screen and (min-width: 1024px) and (max-width:1440px) {
+  .sidebar-mapas1 {
+    width: 215px;
+  }
+}
+
+/* Encabezado */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.sidebar-icon {
+  margin-right: 10px;
+  color: #4a6baf;
+}
+
+.sidebar-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+/* Barra de búsqueda */
+.search-bar {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 8px 8px 8px 35px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Botón nuevo mapa */
+.new-map-btn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  background-color: #4a6baf;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.new-map-btn:hover {
+  background-color: #3a5a9f;
+}
+
+.btn-icon {
+  margin-right: 8px;
+}
+
+/* Secciones */
+.sidebar-section {
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-header:hover {
+  background-color: #dee2e6;
+}
+
+.section-icon {
+  margin-right: 10px;
+  color: #495057;
+}
+
+.chevron {
+  margin-left: auto;
+  transition: transform 0.3s;
+}
+
+.chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* Contenido de secciones */
+.section-content {
+  margin-top: 10px;
+  padding-left: 10px;
+}
+
+.mapa-item,
+.plaga-item,
+.coordinate-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.mapa-name,
+.plaga-name {
+  font-weight: 600;
+  color: #212529;
+}
+
+.mapa-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 5px;
+}
+
+/* Estilos para plagas */
+.plaga-header {
+  display: flex;
+  align-items: center;
+}
+
+.plaga-header input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+.plaga-style-controls {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px dashed #ced4da;
+}
+
+.style-control {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.style-control label {
+  width: 60px;
+  font-size: 0.8rem;
+  color: #495057;
+}
+
+.style-control input[type="color"] {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.style-control select {
+  flex: 1;
+  padding: 5px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* Panel de información */
+.coordinate-info-panel {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  padding: 15px;
+  margin: 15px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.panel-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #212529;
+}
+
+.panel-content p {
+  margin: 6px 0;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.panel-content strong {
+  color: #212529;
+}
+
+/* Items de coordenadas */
+.coordinate-item {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.coordinate-item:hover {
+  background-color: #f8f9fa;
+}
+
+.coordinate-marker {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-right: 12px;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.coordinate-info {
+  flex: 1;
+}
+
+.coordinate-plaga {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #212529;
+}
+
+.coordinate-desc {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin: 3px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coordinate-date {
+  font-size: 0.75rem;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+}
+
+.coordinate-date svg {
+  margin-right: 5px;
+  font-size: 0.7rem;
+}

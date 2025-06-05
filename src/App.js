@@ -93,7 +93,7 @@ const updateMarkerStyles = (plagaId, newStyles) => {
 };
 
 const App = () => (
-  <Router>
+  <Router basename='/'>
     <AppContent />
   </Router>
 );

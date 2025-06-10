@@ -751,7 +751,7 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
     <div
       className="map-container"
       style={{
-        width: collapsed ? 'calc(100vw - 120px)' : 'calc(100vw - 267px)',
+        width: collapsed ? 'calc(100vw - 120px)' : 'calc(100vw - 235px)',
         transition: 'width 0.3s ease',
       }}
     >

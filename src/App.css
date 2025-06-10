@@ -43,7 +43,7 @@
     position: fixed !important;
     top: 47px !important;
     right: 0;
-    width: 85%;
+    width: 83%;
     height: 92vh;
     border: 2px solid #ccc;
     border-radius: 10px;
@@ -101,8 +101,8 @@
   }
 
   .map-container {
-    width: 173vh !important;
-    height: 85vh !important;
+    width: 173vh;
+    height: 85vh;
   }
 }
 

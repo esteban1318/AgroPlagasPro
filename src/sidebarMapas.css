@@ -18,7 +18,7 @@
   width: 250px;
   /* ancho cuando está abierto */
   transition: width 0.3s ease;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .sidebar-mapas1.collapsed {
@@ -49,6 +49,57 @@
 @media screen and (min-width: 1024px) and (max-width:1440px) {
   .sidebar-mapas1 {
     width: 215px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+
+  /* Sidebar colapsado (estado inicial) */
+  .sidebar-mapas1 {
+    position: fixed;
+    width: 5px;
+    /* Solo muestra un borde delgado */
+
+    /* Ocupa toda la altura */
+    top: 160px;
+    bottom: 100px;
+    left: 40px;
+    right: auto;
+
+    background-color: transparent;
+    border-right: 2px solid #4a6baf;
+    /* Línea vertical azul (como "grabber") */
+    z-index: 1000;
+    transition: width 0.3s ease, transform 0.3s ease;
+    overflow: hidden;
+    /* Oculta el contenido */
+    cursor: grab;
+    /* Cambia el cursor para indicar que se puede arrastrar */
+  }
+
+  /* Sidebar abierto (al hacer clic/tocar) */
+  .sidebar-mapas1.active {
+    width: 80%;
+    /* Ancho deseado al expandirse (puede ser 100% si prefieres pantalla completa) */
+    background-color: #f8f9fa;
+    /* Fondo visible solo cuando está expandido */
+    border-right: 1px solid #dee2e6;
+    /* Borde normal */
+    overflow-y: auto;
+    /* Permite scroll */
+  }
+
+  /* Estilo para el "grabber" (opcional, mejora la UX) */
+  .sidebar-mapas1::before {
+    content: "≡";
+    /* Icono de hamburguesa o líneas */
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #4a6baf;
+    font-size: 16px;
+    font-weight: bold;
   }
 }
 

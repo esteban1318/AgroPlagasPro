@@ -24,7 +24,7 @@ const Login = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/login', {
+            const response = await fetch('https://agroplagaspro-backend-1.onrender.com/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

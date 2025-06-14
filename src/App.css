@@ -152,6 +152,7 @@
 }
 
 .btn-inicio-terreno {
+  display:none !important;
   position: absolute !important;
   top: 10px !important;
   left: 50px !important;

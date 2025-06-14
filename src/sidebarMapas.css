@@ -52,54 +52,80 @@
   }
 }
 
+/* Versión móvil (menos de 768px) */
 @media screen and (max-width: 767px) {
-
-  /* Sidebar colapsado (estado inicial) */
   .sidebar-mapas1 {
     position: fixed;
-    width: 5px;
-    /* Solo muestra un borde delgado */
-
-    /* Ocupa toda la altura */
-    top: 160px;
-    bottom: 100px;
-    left: 40px;
-    right: auto;
-
-    background-color: transparent;
-    border-right: 2px solid #4a6baf;
-    /* Línea vertical azul (como "grabber") */
+    width: 0;
+    min-width: 0;
+    left: 0;
+    top: 100px;
+    bottom: 30%;
+    background-color: rgba(255, 255, 255, 0.07);
+    border-right: none;
+    box-shadow: none;
+    overflow: visible;
+    transition: all 0.3s ease;
     z-index: 1000;
-    transition: width 0.3s ease, transform 0.3s ease;
-    overflow: hidden;
-    /* Oculta el contenido */
-    cursor: grab;
-    /* Cambia el cursor para indicar que se puede arrastrar */
   }
 
-  /* Sidebar abierto (al hacer clic/tocar) */
-  .sidebar-mapas1.active {
-    width: 80%;
-    /* Ancho deseado al expandirse (puede ser 100% si prefieres pantalla completa) */
-    background-color: #f8f9fa;
-    /* Fondo visible solo cuando está expandido */
-    border-right: 1px solid #dee2e6;
-    /* Borde normal */
+  /* Estado expandido */
+  .sidebar-mapas1.expanded {
+    width: 85vw;
+    min-width: 250px;
+    border-right: 2px solid #4a6baf;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
     overflow-y: auto;
-    /* Permite scroll */
   }
 
-  /* Estilo para el "grabber" (opcional, mejora la UX) */
-  .sidebar-mapas1::before {
+  /* Botón flotante (colapsado) */
+  .sidebar-mapas1.collapsed::before {
     content: "≡";
-    /* Icono de hamburguesa o líneas */
     position: absolute;
-    left: 2px;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
-    color: #4a6baf;
-    font-size: 16px;
+    width: 30px;
+    height: 40px;
+    background-color: #4a6baf;
+    color: white;
+    font-size: 20px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 5px 5px 0;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1001;
+    transition: all 0.2s ease;
+  }
+
+  /* Efecto hover para el botón */
+  .sidebar-mapas1.collapsed:hover::before {
+    background-color: #3a5a9f;
+    width: 35px;
+  }
+
+  /* Botón de cerrar (expandido) */
+  .sidebar-toggle-expanded {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #666;
+    z-index: 1002;
+  }
+
+  /* Asegura que el contenido no sea visible cuando está colapsado */
+  .sidebar-mapas1.collapsed > *:not(:before) {
+    display: none;
+  }
+  .sidebar-toggle-collapsed{
+display:none !important;
   }
 }
 

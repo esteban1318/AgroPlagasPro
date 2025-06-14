@@ -243,7 +243,36 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
   const cerrarSidebar = () => {
     setCollapsed(true);
   }
+
+useEffect(() => {
+  const sidebar = document.querySelector('.sidebar-mapas1');
+  if (sidebar) {
+    const handleClick = (e) => {
+      if (e.clientX < 50 || e.target === sidebar) {
+        sidebar.classList.toggle('active');
+      }
+    };
+    sidebar.addEventListener('click', handleClick);
+
+    // Limpieza
+    return () => {
+      sidebar.removeEventListener('click', handleClick);
+    };
+  }
+}, []);
+
   return (
+       <>
+      {collapsed && (
+        <button 
+          className="sidebar-toggle-collapsed"
+          onClick={() => setCollapsed(false)}
+        >
+          ➡️
+        </button>
+      )}
+      
+
     <div className={`sidebar-mapas1 ${collapsed ? 'collapsed' : 'expanded'}`}>
 
 
@@ -468,7 +497,8 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
         )}
       </div>
     </div >
-  );
+    </>
+  ); 
 };
 
 export default SidebarMapas;

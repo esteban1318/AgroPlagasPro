@@ -905,7 +905,7 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
           📥
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,text/csv"
             ref={fileInputRef}
             onChange={handleFileUpload}
             style={{ display: 'none' }}

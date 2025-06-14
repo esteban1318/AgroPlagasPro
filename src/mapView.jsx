@@ -378,7 +378,7 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   const connectToDatabase = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:8080/api/tables', {
+      const response = await fetch('https://agroplagaspro-backend-1.onrender.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dbConfig),
@@ -406,7 +406,7 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
     try {
       setIsLoading(true);
       const bounds = mapRef.current.getBounds();
-      const response = await fetch('http://localhost:8080/api/data', {
+      const response = await fetch('https://agroplagaspro-backend-1.onrender.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

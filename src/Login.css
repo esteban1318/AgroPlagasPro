@@ -105,7 +105,7 @@
 
 .mobile-input,
 .mobile-select {
-    width: 100%;
+    width: 80%;
     padding: 12px 12px 12px 40px;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -670,7 +670,7 @@
 
     .modern-input,
     .modern-select {
-        width: 100%;
+        width: 90%;
         padding-left: 40px;
     }
 

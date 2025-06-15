@@ -619,21 +619,14 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   //recalibra el mapa cuando el sidebar collapsa
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (mapRef.current && typeof mapRef.current.resize === 'function') {
-        try {
-          mapRef.current.resize();
-        } catch (error) {
-          console.error('Error al hacer resize en el mapa:', error);
-        }
-      } else {
-        console.warn('mapRef.current no está disponible o no tiene método resize');
+      const map = mapRef.current?.getMap?.();
+      if (map && typeof map.resize === 'function') {
+        map.resize();
       }
-    }, 300); // Puedes ajustar el tiempo
+    }, 300);
 
-    return () => clearTimeout(timeout); // Limpieza segura
+    return () => clearTimeout(timeout);
   }, [collapsed]);
-
-
 
 
   // Nueva función para limpiar localStorage

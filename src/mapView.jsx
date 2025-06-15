@@ -618,12 +618,21 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   }, []);
   //recalibra el mapa cuando el sidebar collapsa
   useEffect(() => {
-    if (mapRef.current) {
-      setTimeout(() => {
-        mapRef.current.resize();
-      }, 1000); // 100 ms de retraso
-    }
+    const timeout = setTimeout(() => {
+      if (mapRef.current && typeof mapRef.current.resize === 'function') {
+        try {
+          mapRef.current.resize();
+        } catch (error) {
+          console.error('Error al hacer resize en el mapa:', error);
+        }
+      } else {
+        console.warn('mapRef.current no está disponible o no tiene método resize');
+      }
+    }, 300); // Puedes ajustar el tiempo
+
+    return () => clearTimeout(timeout); // Limpieza segura
   }, [collapsed]);
+
 
 
 

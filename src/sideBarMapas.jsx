@@ -243,6 +243,17 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
   const cerrarSidebar = () => {
     setCollapsed(true);
   }
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (e.clientX < 50) {
+        setCollapsed(prev => !prev);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => {
+      document.removeEventListener('click', handleClick);
+    };
+  }, []);
 
   const sidebarRef = useRef(null);
   return (
@@ -258,21 +269,16 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
 
       <div
         ref={sidebarRef}
-        onClick={(e) => {
-          // Solo si el clic está cerca del borde izquierdo o sobre el contenedor
-          if (e.clientX < 50 || e.target === sidebarRef.current) {
-            setCollapsed(prev => !prev);
-          }
-        }}
         className={`sidebar-mapas1 ${collapsed ? 'collapsed' : 'expanded'}`}
       >
+
 
         <div className="sidebar-header">
           <h3>
             <FaMap className="sidebar-icon" />
             {!collapsed && <span>Herramientas</span>}
           </h3>
-          <button onClick={() => setCollapsed(!collapsed)} className="sidebar-toggle">
+          <button onClick={() => setCollapsed(!collapsed)}>
             {collapsed ? '➡️' : '⬅️'}
           </button>
         </div>

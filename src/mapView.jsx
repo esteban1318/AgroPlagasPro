@@ -382,7 +382,12 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
       worker.terminate();
     };
 
-    worker.postMessage(file);
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const csvText = e.target.result;
+      worker.postMessage(csvText); // ✅ envía el contenido de texto, no el archivo
+    };
+    reader.readAsText(file, 'UTF-8'); // ✅ fuerza la codificación correcta
   }, []);
   //funcion que dispara la carga de datos desde la base de datos
   const connectToDatabase = useCallback(async () => {

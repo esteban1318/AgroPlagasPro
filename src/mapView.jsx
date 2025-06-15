@@ -311,6 +311,7 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   }, [setDrawCoords]);
   //funcion que permite subir los datos desde formato csv
   const handleFileUpload = useCallback((fileEvent) => {
+    console.log('🪲 Plaga IDs guardados en localStorage');
     const file = fileEvent.target.files[0];
     if (!file) return;
 
@@ -340,6 +341,15 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
         worker.terminate();
         return;
       }
+
+      // ✅ Guardar x, y, plaga_id en localStorage
+      const simplified = features.map(f => ({
+        x: f.properties.x,
+        y: f.properties.y,
+        plaga_id: f.properties.plaga_id,
+      }));
+      localStorage.setItem('plagas_csv', JSON.stringify(simplified));
+      console.log('✅ x, y, plaga_id guardados en localStorage:', simplified);
 
       const CHUNK_SIZE = 2000;
       const totalChunks = Math.ceil(features.length / CHUNK_SIZE);

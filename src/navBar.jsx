@@ -12,6 +12,7 @@ import {
 import { IoIosNotificationsOutline } from 'react-icons/io';
 import './navBar.css';
 import CerrarSesion from './iconos/cerrar-sesion.png';
+import menu from './iconos/menu.png'; // Asegúrate de tener el icono de menú
 
 const NavBar = ({ user, onLogout }) => {
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
@@ -64,9 +65,7 @@ const NavBar = ({ user, onLogout }) => {
 
         {/* Botón del menú móvil */}
         <button className="mobile-menu-btn" onClick={toggleMenu}>
-          <span className="menu-line"></span>
-          <span className="menu-line"></span>
-          <span className="menu-line"></span>
+          <img src={menu} alt="" />
         </button>
       </div>
 

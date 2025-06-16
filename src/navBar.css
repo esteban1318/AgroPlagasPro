@@ -336,21 +336,11 @@
     flex-direction: column;
     justify-content: center;
     cursor: pointer;
-    background: none;
+    background-color: transparent;
     border: none;
     padding: 0.5rem;
-
+    z-index: 900px;
 }
-
-.menu-line {
-    width: 25px;
-    height: 3px;
-    background-color: #333;
-    /* <-- asegúrate que esto NO sea blanco (#fff) */
-    margin: 4px 0;
-    border-radius: 2px;
-}
-
 
 @media (max-width: 768px) {
     .mobile-menu-btn {
@@ -361,7 +351,6 @@
     .navbar-nav {
         flex-direction: column;
     }
-
 
 }
 

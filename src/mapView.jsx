@@ -246,12 +246,17 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   // Cierra el menú al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      const menu = menuRef.current;
+      if (menu && !menu.contains(event.target)) {
         setMostrarMenu(false);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
   useEffect(() => {
     const storedFeatures = JSON.parse(localStorage.getItem('features') || '[]');

@@ -14,6 +14,10 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.hidden {
+  display: none;
+}
+
 .sidebar-mapas1 {
   width: 250px;
   /* ancho cuando está abierto */
@@ -121,11 +125,12 @@
   }
 
   /* Asegura que el contenido no sea visible cuando está colapsado */
-  .sidebar-mapas1.collapsed > *:not(:before) {
+  .sidebar-mapas1.collapsed>*:not(:before) {
     display: none;
   }
-  .sidebar-toggle-collapsed{
-display:none !important;
+
+  .sidebar-toggle-collapsed {
+    display: none !important;
   }
 }
 

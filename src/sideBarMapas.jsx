@@ -249,8 +249,9 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
     return () => setIsMounted(false);
   }, []);
   const handleToggle = useCallback(() => {
-    if (!isMounted) return;
-    setCollapsed(prev => !prev);
+    setTimeout(() => {
+      setCollapsed(prev => !prev);
+    }, 0);
   }, [isMounted]);
 
   const sidebarRef = useRef(null);

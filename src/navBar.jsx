@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react'; // ✅ Asegúrate de importar useState
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   FaMapMarkedAlt,
@@ -13,15 +13,20 @@ import { IoIosNotificationsOutline } from 'react-icons/io';
 import './navBar.css';
 import CerrarSesion from './iconos/cerrar-sesion.png';
 
-
-
 const NavBar = ({ user, onLogout }) => {
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const navigate = useNavigate();
-  // logout.js o dentro de un useContext
+
+  // ✅ Esta función va fuera de cerrarSesion
+  const toggleMenu = () => {
+    setMobileMenuVisible(prev => !prev);
+  };
+
   const cerrarSesion = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
+
   return (
     <header className="navbar-moderno">
       <div className="navbar-container">
@@ -34,7 +39,7 @@ const NavBar = ({ user, onLogout }) => {
         </div>
 
         {/* Menú principal */}
-        <nav className="navbar-nav">
+        <nav className={`navbar-nav ${mobileMenuVisible ? 'active' : ''}`}>
           <ul className="nav-list">
             <li className="nav-item">
               <NavLink to="/mapa" className="nav-link">
@@ -57,18 +62,17 @@ const NavBar = ({ user, onLogout }) => {
           </ul>
         </nav>
 
-
-
-        {/* Menú móvil */}
-        <button className="mobile-menu-btn">
+        {/* Botón del menú móvil */}
+        <button className="mobile-menu-btn" onClick={toggleMenu}>
           <span className="menu-line"></span>
           <span className="menu-line"></span>
           <span className="menu-line"></span>
         </button>
       </div>
+
       <div>
         <button className='btnCerrarSesion' onClick={cerrarSesion}>
-          <img className='icono-cerrar-sesion' src={CerrarSesion} alt='cerrar sesion'></img>
+          <img className='icono-cerrar-sesion' src={CerrarSesion} alt='cerrar sesion' />
         </button>
       </div>
     </header>

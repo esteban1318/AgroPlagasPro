@@ -9,6 +9,7 @@ import PlagasView from './plagasView';
 import { PestFilterProvider } from './PestFilterContext';
 import Login from './login.jsx';
 
+
 const AppContent = () => {
   const [user, setUser] = useState(null);
   const onLogout = () => setUser(null);

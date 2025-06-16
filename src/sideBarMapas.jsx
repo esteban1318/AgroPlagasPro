@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useContext, useMemo } from 'react';
-import { FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt } from 'react-icons/fa';
 import './sidebarMapas.css';
 import PestFilterContext from './PestFilterContext';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -7,7 +7,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
   const [coordinates, setCoordinates] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
-
+  const [mobileCollapsed, setMobileCollapsed] = useState(true);
+  const [mobileActiveTab, setMobileActiveTab] = useState('plagas');
   const {
     selectedPlagas,
     setSelectedPlagas,
@@ -464,6 +465,130 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
           </div>
         )}
       </div>
+      <div className="mobile-sidebar-container">
+        {/* Botón flotante para abrir sidebar en móvil */}
+        {mobileCollapsed && (
+          <button
+            className="mobile-sidebar-toggle-button"
+            onClick={() => setMobileCollapsed(false)}
+          >
+            <FaChevronLeft />
+          </button>
+        )}
+
+        {/* Sidebar para móvil */}
+        <div className={`mobile-sidebar ${mobileCollapsed ? 'collapsed' : ''}`}>
+          <div className="mobile-sidebar-header">
+            <button
+              className="mobile-close-button"
+              onClick={() => setMobileCollapsed(true)}
+            >
+              <FaTimes />
+            </button>
+            <h3>
+              <FaMap />
+              <span>Herramientas</span>
+            </h3>
+          </div>
+
+          {/* Panel de información */}
+          {selectedCoordinate && (
+            <div className="mobile-info-panel">
+              <div className="mobile-panel-header">
+                <h4>Detalle de Plaga</h4>
+                <button onClick={() => setSelectedCoordinate(null)}>
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="mobile-panel-content">
+                <p><strong>Plaga:</strong> {plagas.find(p => p.id === selectedCoordinate.plagaId)?.nombre}</p>
+                <p><strong>Coords:</strong> {selectedCoordinate.lat}, {selectedCoordinate.lng}</p>
+                <p className="mobile-truncate">{selectedCoordinate.descripcion}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Contenido principal con tabs */}
+          <div className="mobile-tabs">
+            <button
+              className={`mobile-tab ${mobileActiveTab === 'plagas' ? 'active' : ''}`}
+              onClick={() => setMobileActiveTab('plagas')}
+            >
+              <FaBug /> Plagas
+            </button>
+            <button
+              className={`mobile-tab ${mobileActiveTab === 'reportes' ? 'active' : ''}`}
+              onClick={() => setMobileActiveTab('reportes')}
+            >
+              <FaMapMarkedAlt /> Reportes
+            </button>
+          </div>
+
+          {/* Contenido de tabs */}
+          <div className="mobile-content">
+            {mobileActiveTab === 'plagas' ? (
+              <div className="mobile-plagas-content">
+                {Object.entries(groupedPlagas).map(([nombre, subPlagas]) => (
+                  <div key={nombre} className="mobile-plaga-group">
+                    <div
+                      className="mobile-group-header"
+                      onClick={() => togglePlagaGroup(nombre)}
+                    >
+                      <span>{nombre}</span>
+                      <FaChevronDown className={`mobile-chevron ${expandedGroups.includes(nombre) ? 'expanded' : ''}`} />
+                    </div>
+
+                    {expandedGroups.includes(nombre) && (
+                      <div className="mobile-plaga-list">
+                        {subPlagas.map(plaga => (
+                          <div
+                            key={plaga.id}
+                            className={`mobile-plaga-item ${selectedPlagas.includes(plaga.id) ? 'selected' : ''}`}
+                            onClick={() => togglePlagaSelection(plaga)}
+                          >
+                            <div
+                              className="mobile-color-badge"
+                              style={{ backgroundColor: markerStyles[plaga.id]?.color || '#FF0000' }}
+                            />
+                            <span>{plaga.id}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              //menu lateral para mobiles
+              <div className="mobile-reportes-content">
+                {coordinates.map(coord => (
+                  <div
+                    key={coord.id}
+                    className="mobile-reporte-item"
+                    onClick={() => handleCoordinateClick(coord)}
+                  >
+                    <div
+                      className="mobile-reporter-marker"
+                      style={{ backgroundColor: markerStyles[coord.plagaId]?.color || '#FF0000' }}
+                    >
+                      <FaBug />
+                    </div>
+                    <div className="mobile-reporte-info">
+                      <div className="mobile-reporte-name">
+                        {plagas.find(p => p.id === coord.plagaId)?.nombre}
+                      </div>
+                      <div className="mobile-reporte-date">
+                        <FaInfoCircle /> {coord.fecha}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
     </div >
 
   );

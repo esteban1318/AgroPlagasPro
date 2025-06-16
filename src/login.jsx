@@ -41,6 +41,10 @@ const Login = () => {
             if (response.ok) {
                 setMessage(data.message || 'Login exitoso');
                 setMessageType('success');
+
+                // 💾 Guarda el nombre de usuario en localStorage
+                localStorage.setItem('username', username);
+
                 setTimeout(() => {
                     navigate('/mapa');
                 }, 1000);

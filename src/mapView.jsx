@@ -314,9 +314,8 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   const handleDeleteCoord = useCallback((index) => {
     setDrawCoords((coords) => coords.filter((_, i) => i !== index));
   }, [setDrawCoords]);
-  //funcion que permite subir los datos desde formato csv
+  //funcion para cargar csv
   const handleFileUpload = useCallback((fileEvent) => {
-    console.log('🪲 Plaga IDs guardados en localStorage');
     const file = fileEvent.target.files[0];
     if (!file) return;
 
@@ -327,8 +326,7 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
       type: 'module',
     });
 
-    worker.onmessage = (messageEvent) => {
-      console.log('Datos recibidos del Web Worker:', messageEvent.data);
+    worker.onmessage = async (messageEvent) => {
       if (messageEvent.data.error) {
         console.error('Error en Web Worker:', messageEvent.data.error);
         alert('Error al procesar el CSV: ' + messageEvent.data.error);
@@ -338,8 +336,6 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
       }
 
       const features = messageEvent.data.features;
-      console.log('Features recibidas:', features);
-
       if (features.length === 0) {
         alert('No se encontraron datos válidos en el CSV.');
         setIsLoading(false);
@@ -347,32 +343,47 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
         return;
       }
 
-      // ✅ Guardar x, y, plaga_id en localStorage
+      // Guardar en localStorage
       const simplified = features.map(f => ({
         x: f.properties.x,
         y: f.properties.y,
         plaga_id: f.properties.plaga_id,
       }));
       localStorage.setItem('plagas_csv', JSON.stringify(simplified));
-      console.log('✅ x, y, plaga_id guardados en localStorage:', simplified);
+      console.log('✅ Guardado en localStorage:', simplified);
 
+      // 💾 GUARDAR EN BACKEND
+      const username = localStorage.getItem('username'); // Asegúrate de guardar esto al hacer login
+      try {
+        const response = await fetch(`https://agroplagaspro-backend-1.onrender.com/api/coordenadas/${username}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(simplified),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error al guardar coordenadas en backend (${response.status})`);
+        }
+
+        console.log('🛰 Coordenadas guardadas en el backend exitosamente.');
+      } catch (err) {
+        console.error('❌ Error al guardar coordenadas en el backend:', err);
+      }
+
+      // Cargar en chunks en el mapa
       const CHUNK_SIZE = 2000;
       const totalChunks = Math.ceil(features.length / CHUNK_SIZE);
-      console.log('Total de chunks:', totalChunks);
 
       const loadChunk = (chunkIndex) => {
         const start = chunkIndex * CHUNK_SIZE;
         const end = start + CHUNK_SIZE;
         const chunk = features.slice(start, end);
-        console.log(`Cargando chunk ${chunkIndex + 1}/${totalChunks}:`, chunk.length, 'features');
-
         setUploadedFeatures((prev) => [...prev, ...chunk]);
 
         if (chunkIndex < totalChunks - 1) {
           setTimeout(() => loadChunk(chunkIndex + 1), 50);
         } else {
           setIsLoading(false);
-          console.log('Carga completada, total features:', features.length);
         }
       };
 
@@ -390,10 +401,11 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
     const reader = new FileReader();
     reader.onload = function (e) {
       const csvText = e.target.result;
-      worker.postMessage(csvText); // ✅ envía el contenido de texto, no el archivo
+      worker.postMessage(csvText);
     };
-    reader.readAsText(file, 'UTF-8'); // ✅ fuerza la codificación correcta
+    reader.readAsText(file, 'UTF-8');
   }, []);
+
   //funcion que dispara la carga de datos desde la base de datos
   const connectToDatabase = useCallback(async () => {
     try {

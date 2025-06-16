@@ -91,6 +91,7 @@
 }
 
 
+
 @media (min-width: 768px) and (max-width: 1024px) {
 
   .btn-cambiar-capa,
@@ -152,7 +153,7 @@
 }
 
 .btn-inicio-terreno {
-  display:none !important;
+  display: none !important;
   position: absolute !important;
   top: 10px !important;
   left: 50px !important;
@@ -183,6 +184,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  margin-top: 90px;
 }
 
 .icono-boton {
@@ -217,7 +219,7 @@
 
 .btn-cargar-coords {
   position: absolute;
-  top: 120px;
+  top: 160px;
   right: 10px;
   background-color: rgba(0, 0, 0, 0.6);
   color: white;
@@ -338,7 +340,7 @@
 
 .btn-conectar-db {
   position: absolute;
-  top: 180px;
+  top: 220px;
   right: 10px;
   background-color: rgba(0, 0, 0, 0.6);
   color: white;
@@ -350,7 +352,7 @@
 
 .btn-limpiar-coords {
   position: absolute;
-  top: 240px;
+  top: 280px;
   right: 10px;
   background-color: rgba(0, 0, 0, 0.6);
   color: white;

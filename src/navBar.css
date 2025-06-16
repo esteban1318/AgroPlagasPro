@@ -297,7 +297,14 @@
 /* Responsive */
 @media (max-width: 992px) {
 
-    .navbar-nav,
+    .navbar-nav {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 5vh;
+        /* opcional, si quieres que ocupe toda la altura */
+    }
+
     .user-controls {
         display: none;
     }
@@ -326,6 +333,7 @@
 
     .navbar-nav.active {
         display: flex;
+        align-content: center;
         /* Mostrar al hacer clic */
     }
 }

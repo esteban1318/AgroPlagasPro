@@ -639,6 +639,9 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   const clearLocalStorageFeatures = useCallback(() => {
     try {
       localStorage.removeItem('uploadedFeatures');
+      localStorage.removeItem('plagas_csv');
+      localStorage.removeItem('plagaIDs');
+
       setUploadedFeatures([]);
       setClusters([]);
       setVisibleFeatures([]);
@@ -649,12 +652,41 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
         fileInputRef.current.value = '';
       }
 
+      // 🗺️ Limpiar fuentes y capas del mapa
+      const map = mapRef.current?.getMap?.();
+      if (map) {
+        const layers = map.getStyle().layers || [];
+
+        layers.forEach((layer) => {
+          const { id } = layer;
+          if (
+            id.startsWith('heatmap-') ||
+            id.startsWith('plaga-layer') ||  // tu prefijo de puntos si usas alguno
+            id.startsWith('cluster')        // si tienes capas de cluster
+          ) {
+            if (map.getLayer(id)) {
+              map.removeLayer(id);
+              console.log(`✅ Capa eliminada: ${id}`);
+            }
+          }
+        });
+
+        const sources = ['plagas-source', ...Object.keys(markerStyles || {}).map(id => `heatmap-source-${id}`)];
+        sources.forEach(sourceId => {
+          if (map.getSource(sourceId)) {
+            map.removeSource(sourceId);
+            console.log(`🗑️ Fuente eliminada: ${sourceId}`);
+          }
+        });
+      }
+
       alert('Coordenadas limpiadas correctamente.');
     } catch (error) {
       console.error('Error limpiando localStorage:', error);
       alert('Error al limpiar las coordenadas: ' + error.message);
     }
-  }, []);
+  }, [markerStyles]);
+
 
   const lineFeatures = useMemo(
     () => uploadedFeatures.filter((f) => f.geometry?.type === 'LineString'),
@@ -878,7 +910,7 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
             type="symbol"
             layout={{
               'icon-image': 'triangle-icon',  // debe coincidir con el nombre usado en addImage
-              'icon-size': 1,
+              'icon-size': 0.03,
               'icon-allow-overlap': true     // permite que los iconos se superpongan sin desaparecer
             }}
           />

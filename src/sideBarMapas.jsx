@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useContext, useMemo } from 'react';
 import { FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt } from 'react-icons/fa';
 import './sidebarMapas.css';
 import PestFilterContext from './PestFilterContext';
@@ -6,6 +6,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 
 const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
   const [coordinates, setCoordinates] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
 
   const {
     selectedPlagas,
@@ -244,16 +245,13 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
     setCollapsed(true);
   }
   useEffect(() => {
-    const handleClick = (e) => {
-      if (e.clientX < 50) {
-        setCollapsed(prev => !prev);
-      }
-    };
-    document.addEventListener('click', handleClick);
-    return () => {
-      document.removeEventListener('click', handleClick);
-    };
+    setIsMounted(true);
+    return () => setIsMounted(false);
   }, []);
+  const handleToggle = useCallback(() => {
+    if (!isMounted) return;
+    setCollapsed(prev => !prev);
+  }, [isMounted, setCollapsed]);
 
   const sidebarRef = useRef(null);
   return (
@@ -261,182 +259,183 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
       {collapsed && (
         <button
           className="sidebar-toggle-collapsed"
-          onClick={() => setCollapsed(false)}
+          onClick={handleToggle}
         >
           ➡️
         </button>
       )}
-
-      <div
-        ref={sidebarRef}
-        className={`sidebar-mapas1 ${collapsed ? 'collapsed' : 'expanded'}`}
-      >
-
-
-        <div className="sidebar-header">
-          <h3>
-            <FaMap className="sidebar-icon" />
-            {!collapsed && <span>Herramientas</span>}
-          </h3>
-          <button onClick={() => setCollapsed(!collapsed)}>
-            {collapsed ? '➡️' : '⬅️'}
-          </button>
-        </div>
+      {isMounted && (
+        <div
+          ref={sidebarRef}
+          className={`sidebar-mapas1 ${collapsed ? 'collapsed' : 'expanded'}`}
+          aria-hidden={collapsed}
+        >
 
 
-        <div className="search-bar">
-          <FaSearch className="search-icon" />
-          {!collapsed && (
-            <input type="text" placeholder="Buscar plaga o ubicación..." />
-          )}
-        </div>
-
-        <button className="new-map-btn">
-          <FaPlus className="btn-icon" />
-          {!collapsed && "Nuevo Reporte"}
-        </button>
-
-
-        {/* Panel de información de coordenada seleccionada */}
-        {selectedCoordinate && (
-          <div className="coordinate-info-panel">
-            <div className="panel-header">
-              <h4>Detalle de Plaga</h4>
-              <button onClick={() => setSelectedCoordinate(null)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className="panel-content">
-              <p><strong>Plaga:</strong> {plagas.find(p => p.id === selectedCoordinate.plagaId)?.nombre}</p>
-              <p><strong>Fecha:</strong> {selectedCoordinate.fecha}</p>
-              <p><strong>Descripción:</strong> {selectedCoordinate.descripcion}</p>
-              <p><strong>Coordenadas:</strong> {selectedCoordinate.lat}, {selectedCoordinate.lng}</p>
-            </div>
+          <div className="sidebar-header">
+            <h3>
+              <FaMap className="sidebar-icon" />
+              {!collapsed && <span>Herramientas</span>}
+            </h3>
+            <button onClick={handleToggle}>
+              {collapsed ? '➡️' : '⬅️'}
+            </button>
           </div>
-        )}
 
-        {/* Sección de Plagas con controles de estilo */}
-        <div className="sidebar-section">
-          <div className="section-header" onClick={() => toggleSection('plagas')}>
-            <FaBug className="section-icon" />
+
+          <div className="search-bar">
+            <FaSearch className="search-icon" />
             {!collapsed && (
-              <>
-                <span>Filtrar Plagas</span>
-                <FaChevronDown className={`chevron ${expandedSection === 'plagas' ? 'expanded' : ''}`} />
-              </>
+              <input type="text" placeholder="Buscar plaga o ubicación..." />
             )}
           </div>
-          {expandedSection === 'plagas' && !collapsed && (
-            <div className="section-content">
-              {Object.entries(groupedPlagas).map(([nombre, subPlagas]) => (
-                <div key={nombre} className="plaga-group">
-                  <div className="group-header" onClick={() => togglePlagaGroup(nombre)}>
-                    <span>{nombre}</span>
-                    <FaChevronDown className={`chevron ${expandedGroups.includes(nombre) ? 'expanded' : ''}`} />
-                  </div>
 
-                  {expandedGroups.includes(nombre) && (
-                    <div className="subplagas">
-                      {subPlagas.map(plaga => (
-                        <div
-                          key={plaga.id}
-                          className={`box ${selectedPlagas.includes(plaga.id) ? 'selected' : ''}`}
-                          onClick={() => togglePlagaSelection(plaga)}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedPlagas.includes(plaga.id)}
-                            onClick={(e) => e.stopPropagation()} // evita que se propague
-                            onChange={() => togglePlagaSelection(plaga)} // gestiona la selección
-                          />
+          <button className="new-map-btn">
+            <FaPlus className="btn-icon" />
+            {!collapsed && "Nuevo Reporte"}
+          </button>
 
-                          <span>{plaga.id}</span>
 
-                          {selectedPlagas.includes(plaga.id) && (
-                            <div className="plaga-style-controls">
-                              {/* Controles básicos */}
-                              <div className="style-control">
-                                <label>Color:</label>
-                                <input
-                                  type="color"
-                                  value={markerStyles[plaga.id]?.color || '#FF0000'}
-                                  onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
-                                  onChange={(e) => handleMarkerStyleChange(plaga.id, 'color', e.target.value)}
-                                />
-                              </div>
-
-                              <div className="style-control">
-                                <label>Icono:</label>
-                                <select
-                                  value={markerStyles[plaga.id]?.icon || 'bug'}
-                                  onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
-                                  onChange={(e) => handleMarkerStyleChange(plaga.id, 'icon', e.target.value)}
-                                >
-                                  <option value="bug">Insecto</option>
-                                  <option value="leaf">Hoja</option>
-                                  <option value="warning">Advertencia</option>
-                                </select>
-                              </div>
-
-                              <div className="style-control">
-                                <label>Forma:</label>
-                                <select
-                                  value={markerStyles[plaga.id]?.shape || 'circle'}
-                                  onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
-                                  onChange={(e) => handleMarkerStyleChange(plaga.id, 'shape', e.target.value)}
-                                >
-                                  <option value="circle">Círculo</option>
-
-                                  <option value="triangle">Triángulo</option>
-                                </select>
-                              </div>
-
-                              {/* Controles del heatmap */}
-                              <div className="style-control heatmap-toggle">
-                                <label>
-                                  <input
-                                    type="checkbox"
-                                    checked={markerStyles[plaga.id]?.heatmapEnabled || false}
-                                    onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
-                                    onChange={(e) => {
-                                      handleMarkerStyleChange(plaga.id, 'heatmapEnabled', e.target.checked);
-                                    }}
-                                  />
-                                  <span>Mapa de calor</span>
-                                </label>
-                              </div>
-
-                              {markerStyles[plaga.id]?.heatmapEnabled && (
-                                <div className="style-control">
-                                  <label>
-                                    Radio: {markerStyles[plaga.id]?.heatmapRadius || 20}px
-                                  </label>
-                                  <input
-                                    type="range"
-                                    min="5"
-                                    max="50"
-                                    value={markerStyles[plaga.id]?.heatmapRadius || 20}
-                                    onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
-                                    onChange={(e) => {
-                                      handleMarkerStyleChange(plaga.id, 'heatmapRadius', parseInt(e.target.value));
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+          {/* Panel de información de coordenada seleccionada */}
+          {selectedCoordinate && (
+            <div className="coordinate-info-panel">
+              <div className="panel-header">
+                <h4>Detalle de Plaga</h4>
+                <button onClick={() => setSelectedCoordinate(null)}>
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="panel-content">
+                <p><strong>Plaga:</strong> {plagas.find(p => p.id === selectedCoordinate.plagaId)?.nombre}</p>
+                <p><strong>Fecha:</strong> {selectedCoordinate.fecha}</p>
+                <p><strong>Descripción:</strong> {selectedCoordinate.descripcion}</p>
+                <p><strong>Coordenadas:</strong> {selectedCoordinate.lat}, {selectedCoordinate.lng}</p>
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Sección de Mapas */}
-        {/*<div className="sidebar-section">
+          {/* Sección de Plagas con controles de estilo */}
+          <div className="sidebar-section">
+            <div className="section-header" onClick={() => toggleSection('plagas')}>
+              <FaBug className="section-icon" />
+              {!collapsed && (
+                <>
+                  <span>Filtrar Plagas</span>
+                  <FaChevronDown className={`chevron ${expandedSection === 'plagas' ? 'expanded' : ''}`} />
+                </>
+              )}
+            </div>
+            {expandedSection === 'plagas' && !collapsed && (
+              <div className="section-content">
+                {Object.entries(groupedPlagas).map(([nombre, subPlagas]) => (
+                  <div key={nombre} className="plaga-group">
+                    <div className="group-header" onClick={() => togglePlagaGroup(nombre)}>
+                      <span>{nombre}</span>
+                      <FaChevronDown className={`chevron ${expandedGroups.includes(nombre) ? 'expanded' : ''}`} />
+                    </div>
+
+                    {expandedGroups.includes(nombre) && (
+                      <div className="subplagas">
+                        {subPlagas.map(plaga => (
+                          <div
+                            key={plaga.id}
+                            className={`box ${selectedPlagas.includes(plaga.id) ? 'selected' : ''}`}
+                            onClick={() => togglePlagaSelection(plaga)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedPlagas.includes(plaga.id)}
+                              onClick={(e) => e.stopPropagation()} // evita que se propague
+                              onChange={() => togglePlagaSelection(plaga)} // gestiona la selección
+                            />
+
+                            <span>{plaga.id}</span>
+
+                            {selectedPlagas.includes(plaga.id) && (
+                              <div className="plaga-style-controls">
+                                {/* Controles básicos */}
+                                <div className="style-control">
+                                  <label>Color:</label>
+                                  <input
+                                    type="color"
+                                    value={markerStyles[plaga.id]?.color || '#FF0000'}
+                                    onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
+                                    onChange={(e) => handleMarkerStyleChange(plaga.id, 'color', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="style-control">
+                                  <label>Icono:</label>
+                                  <select
+                                    value={markerStyles[plaga.id]?.icon || 'bug'}
+                                    onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
+                                    onChange={(e) => handleMarkerStyleChange(plaga.id, 'icon', e.target.value)}
+                                  >
+                                    <option value="bug">Insecto</option>
+                                    <option value="leaf">Hoja</option>
+                                    <option value="warning">Advertencia</option>
+                                  </select>
+                                </div>
+
+                                <div className="style-control">
+                                  <label>Forma:</label>
+                                  <select
+                                    value={markerStyles[plaga.id]?.shape || 'circle'}
+                                    onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
+                                    onChange={(e) => handleMarkerStyleChange(plaga.id, 'shape', e.target.value)}
+                                  >
+                                    <option value="circle">Círculo</option>
+
+                                    <option value="triangle">Triángulo</option>
+                                  </select>
+                                </div>
+
+                                {/* Controles del heatmap */}
+                                <div className="style-control heatmap-toggle">
+                                  <label>
+                                    <input
+                                      type="checkbox"
+                                      checked={markerStyles[plaga.id]?.heatmapEnabled || false}
+                                      onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
+                                      onChange={(e) => {
+                                        handleMarkerStyleChange(plaga.id, 'heatmapEnabled', e.target.checked);
+                                      }}
+                                    />
+                                    <span>Mapa de calor</span>
+                                  </label>
+                                </div>
+
+                                {markerStyles[plaga.id]?.heatmapEnabled && (
+                                  <div className="style-control">
+                                    <label>
+                                      Radio: {markerStyles[plaga.id]?.heatmapRadius || 20}px
+                                    </label>
+                                    <input
+                                      type="range"
+                                      min="5"
+                                      max="50"
+                                      value={markerStyles[plaga.id]?.heatmapRadius || 20}
+                                      onClick={(e) => e.stopPropagation()} // evita que se cierre el panel
+                                      onChange={(e) => {
+                                        handleMarkerStyleChange(plaga.id, 'heatmapRadius', parseInt(e.target.value));
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sección de Mapas */}
+          {/*<div className="sidebar-section">
         <div className="section-header" onClick={() => toggleSection('mapas')}>
           <FaMap className="section-icon" />
           <span>Mis Mapas</span>
@@ -457,43 +456,44 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
         )}
       </div>*/}
 
-        {/* Sección de Coordenadas */}
-        <div className="sidebar-section">
-          <div className="section-header" onClick={() => toggleSection('coordenadas')}>
-            <FaMapMarkedAlt className="section-icon" />
-            <span>Reportes Recientes</span>
-            <FaChevronDown className={`chevron ${expandedSection === 'coordenadas' ? 'expanded' : ''}`} />
-          </div>
-          {expandedSection === 'coordenadas' && (
-            <div className="section-content">
-              {coordinates.map(coord => (
-                <div
-                  key={coord.id}
-                  className="coordinate-item"
-                  onClick={() => handleCoordinateClick(coord)}
-                >
-                  <div className="coordinate-marker" style={{
-                    backgroundColor: markerStyles[coord.plagaId]?.color || '#FF0000'
-                  }}>
-                    <FaBug />
-                  </div>
-                  <div className="coordinate-info">
-                    <div className="coordinate-plaga">
-                      {plagas.find(p => p.id === coord.plagaId)?.nombre}
-                    </div>
-                    <div className="coordinate-desc">
-                      {coord.descripcion.substring(0, 30)}...
-                    </div>
-                    <div className="coordinate-date">
-                      <FaInfoCircle /> {coord.fecha}
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Sección de Coordenadas */}
+          <div className="sidebar-section">
+            <div className="section-header" onClick={() => toggleSection('coordenadas')}>
+              <FaMapMarkedAlt className="section-icon" />
+              <span>Reportes Recientes</span>
+              <FaChevronDown className={`chevron ${expandedSection === 'coordenadas' ? 'expanded' : ''}`} />
             </div>
-          )}
-        </div>
-      </div >
+            {expandedSection === 'coordenadas' && (
+              <div className="section-content">
+                {coordinates.map(coord => (
+                  <div
+                    key={coord.id}
+                    className="coordinate-item"
+                    onClick={() => handleCoordinateClick(coord)}
+                  >
+                    <div className="coordinate-marker" style={{
+                      backgroundColor: markerStyles[coord.plagaId]?.color || '#FF0000'
+                    }}>
+                      <FaBug />
+                    </div>
+                    <div className="coordinate-info">
+                      <div className="coordinate-plaga">
+                        {plagas.find(p => p.id === coord.plagaId)?.nombre}
+                      </div>
+                      <div className="coordinate-desc">
+                        {coord.descripcion.substring(0, 30)}...
+                      </div>
+                      <div className="coordinate-date">
+                        <FaInfoCircle /> {coord.fecha}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div >
+      )}
     </>
   );
 };

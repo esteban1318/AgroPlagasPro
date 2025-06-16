@@ -15,12 +15,10 @@ addEventListener('message', (e) => {
       console.log('Web Worker: Procesando chunk', results.data);
    
       const feats = results.data.map(row => {
-  const longitude = row.x;
-  const latitude = row.y;
+  const longitude = parseFloat(row.x);
+  const latitude = parseFloat(row.y);
 
   if (
-    typeof longitude !== 'number' ||
-    typeof latitude !== 'number' ||
     isNaN(longitude) ||
     isNaN(latitude)
   ) {

@@ -11,6 +11,13 @@ import { useLocation } from 'react-router-dom';
 import PestFilterContext from './PestFilterContext.jsx';
 import Triangulo from './iconos/alerta.png';
 import SidebarMapas from './sideBarMapas.jsx';
+import {
+  saveCoordenadasToIndexedDB,
+  getCoordenadasFromIndexedDB,
+  deleteCoordenadasFromIndexedDB // <-- ¡importar aquí!
+} from './indexedDB'; // Ajusta la ruta si está en otra carpeta
+
+
 
 //import DbConnectionForm from './DbConnectionForm';
 
@@ -65,6 +72,7 @@ const calcularDensidad = (feature, todasFeatures) => {
 const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId, collapsed, setCollapsed }) => {
   const { selectedPlagas } = useContext(PestFilterContext);
   const location = useLocation();
+
   const savedFeaturesCompressed = localStorage.getItem('uploadedFeatures');
   // === Antes de los useState ===
   let initialFeatures = [];
@@ -343,31 +351,36 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
         return;
       }
 
-      // Guardar en localStorage
+      // Simplificar los datos para guardar
       const simplified = features.map(f => ({
         x: f.properties.x,
         y: f.properties.y,
         plaga_id: f.properties.plaga_id,
       }));
-      localStorage.setItem('plagas_csv', JSON.stringify(simplified));
-      console.log('✅ Guardado en localStorage:', simplified);
+
+      // ✅ Guardar en IndexedDB
+      await saveCoordenadasToIndexedDB(simplified);
 
       // 💾 GUARDAR EN BACKEND
-      const username = localStorage.getItem('username'); // Asegúrate de guardar esto al hacer login
-      try {
-        const response = await fetch(`https://agroplagaspro-backend-1.onrender.com/api/coordenadas/${username}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(simplified),
-        });
+      const username = localStorage.getItem('username');
+      if (!username) {
+        console.error('⚠️ Usuario no encontrado en localStorage');
+      } else {
+        try {
+          const response = await fetch(`https://agroplagaspro-backend-1.onrender.com/api/coordenadas/${username}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(simplified),
+          });
 
-        if (!response.ok) {
-          throw new Error(`Error al guardar coordenadas en backend (${response.status})`);
+          if (!response.ok) {
+            throw new Error(`Error al guardar coordenadas en backend (${response.status})`);
+          }
+
+          console.log('🛰 Coordenadas guardadas en el backend exitosamente.');
+        } catch (err) {
+          console.error('❌ Error al guardar coordenadas en el backend:', err);
         }
-
-        console.log('🛰 Coordenadas guardadas en el backend exitosamente.');
-      } catch (err) {
-        console.error('❌ Error al guardar coordenadas en el backend:', err);
       }
 
       // Cargar en chunks en el mapa
@@ -405,6 +418,64 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
     };
     reader.readAsText(file, 'UTF-8');
   }, []);
+
+  useEffect(() => {
+    async function loadPlagasFromDB() {
+      const data = await getCoordenadasFromIndexedDB();
+
+      // Asegúrate de que mapRef y mapRef.current existan y estén listos
+      const map = mapRef.current;
+      if (!map || !map.addSource) {
+        console.warn('🛑 Mapa aún no está listo');
+        return;
+      }
+
+      if (data.length > 0) {
+        const geojson = {
+          type: 'FeatureCollection',
+          features: data.map((f, index) => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [f.x, f.y],
+            },
+            properties: {
+              plaga_id: f.plaga_id,
+              id: index,
+            },
+          })),
+        };
+
+        if (!map.getSource('plagas-source')) {
+          map.addSource('plagas-source', {
+            type: 'geojson',
+            data: geojson,
+          });
+        }
+
+        if (!map.getLayer('plagas-layer-default')) {
+          map.addLayer({
+            id: 'plagas-layer-default',
+            type: 'circle',
+            source: 'plagas-source',
+            paint: {
+              'circle-radius': 4,
+              'circle-color': '#ff0000',
+            },
+          });
+        }
+      }
+    }
+
+    loadPlagasFromDB();
+  }, []);
+
+  const handleClearMap = async () => {
+    await deleteCoordenadasFromIndexedDB(); // elimina los datos
+    setDisplayedFeatures([]);               // limpia el estado del mapa
+    alert('Coordenadas eliminadas del mapa y de la base local.');
+  };
+
 
   //funcion que dispara la carga de datos desde la base de datos
   const connectToDatabase = useCallback(async () => {
@@ -802,12 +873,40 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
   const onLoad = async (e) => {
     const map = e.target;
 
+    // 🔹 Cargar datos desde IndexedDB al cargar el mapa
+    const data = await getCoordenadasFromIndexedDB(); // asegúrate de tener esta función implementada
+    if (data && data.length > 0) {
+      const geojson = {
+        type: 'FeatureCollection',
+        features: data.map((f, index) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [f.x, f.y],
+          },
+          properties: {
+            plaga_id: f.plaga_id,
+            id: index,
+          },
+        })),
+      };
+
+      // ⚠️ Esta función debe estar definida en tu componente
+      setDisplayedFeatures(geojson.features);
+    }
+
+    // 🔹 Cargar ícono "triangle-icon" si no está cargado
     if (!map.hasImage('triangle-icon')) {
       const response = await fetch(Triangulo);
       const blob = await response.blob();
       const imageBitmap = await createImageBitmap(blob);
       map.addImage('triangle-icon', imageBitmap);
     }
+
+    // 🔹 (Opcional) Agregar más íconos si los necesitas aquí
+    // if (!map.hasImage('square-icon')) {
+    //   ...
+    // }
   };
 
 
@@ -1022,7 +1121,12 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
         <button className='btn-conectar-db' onClick={connectToDatabase}>
           📊
         </button>
+        <button onClick={handleClearMap} className="btn-limpiar-mapa">
+          Limpiar Mapa
+        </button>
+
       </div>
+
     </div >
   );
 };

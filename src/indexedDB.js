@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'PlagasDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'coordenadas';
 
 // ✅ Siempre usa esta función para abrir la DB con upgrade incluido

@@ -4,12 +4,16 @@ const DB_NAME = 'PlagasDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'coordenadas';
 
-// Asegura que el store siempre se cree si no existe
+// ✅ Siempre usa esta función para abrir la DB con upgrade incluido
 async function getDB() {
-  return await openDB(DB_NAME, DB_VERSION, {
+  return openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        db.createObjectStore(STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: true
+        });
+        console.log('📦 Store "coordenadas" creado');
       }
     }
   });
@@ -22,12 +26,12 @@ export async function saveCoordenadasToIndexedDB(data) {
   await store.clear();
   data.forEach(item => store.add(item));
   await tx.done;
-  console.log('✅ Guardado en IndexedDB');
+  console.log('✅ Coordenadas guardadas');
 }
 
 export async function getCoordenadasFromIndexedDB() {
   const db = await getDB();
-  return await db.getAll(STORE_NAME);
+  return db.getAll(STORE_NAME);
 }
 
 export async function deleteCoordenadasFromIndexedDB() {
@@ -36,5 +40,5 @@ export async function deleteCoordenadasFromIndexedDB() {
   const store = tx.objectStore(STORE_NAME);
   await store.clear();
   await tx.done;
-  console.log('🧹 Coordenadas eliminadas de IndexedDB');
+  console.log('🧹 Coordenadas eliminadas');
 }

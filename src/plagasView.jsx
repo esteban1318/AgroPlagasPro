@@ -175,7 +175,7 @@ const PlagasView = ({ pest }) => {
             setErrorWiki(null);
 
             try {
-                const response = await fetch(`http://localhost:8080/api/wikipedia-descripcion?nombre=${encodeURIComponent(nombreLimpio)}`);
+                const response = await fetch(`https://agroplagaspro-backend-1.onrender.com/api/wikipedia-descripcion?nombre=${encodeURIComponent(nombreLimpio)}`);
                 if (!response.ok) throw new Error("Error al obtener taxonomía");
 
                 const data = await response.text(); // <--- aquí
@@ -215,10 +215,6 @@ const PlagasView = ({ pest }) => {
                             />
                         </div>
 
-                        <button className="btn-primary">
-                            <FaPlus className="btn-icon" />
-                            Nueva detección
-                        </button>
                     </div>
                 </div>
 
@@ -298,10 +294,10 @@ const PlagasView = ({ pest }) => {
                                         <span className="detail-value">{pest.colorName}</span>
                                     </div>
                                     <div className="pest-actions">
-                                        <button className="btn-outline" onClick={() => handleViewOnMap(pest.id)}>
+                                        {/*<button className="btn-outline" onClick={() => handleViewOnMap(pest.id)}>
                                             <FaMapMarkerAlt className="btn-icon" />
                                             Ver en mapa
-                                        </button>
+                                        </button>*/}
                                         <button
                                             className="btn-text"
                                             onClick={() => handleMostrarDetalles(pest)}

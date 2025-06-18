@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useContext, useMemo } from 'react';
-import { FaChevronLeft, FaChevronRight, FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt } from 'react-icons/fa';
+import { FaFire, FaEye, FaEyeSlash, FaSync, FaChevronLeft, FaChevronRight, FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt } from 'react-icons/fa';
 import './sidebarMapas.css';
 import PestFilterContext from './PestFilterContext';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -9,6 +9,9 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
   const [isMounted, setIsMounted] = useState(false);
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const [mobileActiveTab, setMobileActiveTab] = useState('plagas');
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [heatmapRadius, setHeatmapRadius] = useState(20);
+  const [heatmapIntensity, setHeatmapIntensity] = useState(0.6);
   const {
     selectedPlagas,
     setSelectedPlagas,
@@ -588,6 +591,144 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
             )}
           </div>
         </div>
+
+
+      </div >
+      <div className="mobile-tabs">
+        <button
+          className={`mobile-tab ${mobileActiveTab === 'plagas' ? 'active' : ''}`}
+          onClick={() => setMobileActiveTab('plagas')}
+        >
+          <FaBug /> Plagas
+        </button>
+        <button
+          className={`mobile-tab ${mobileActiveTab === 'reportes' ? 'active' : ''}`}
+          onClick={() => setMobileActiveTab('reportes')}
+        >
+          <FaMapMarkedAlt /> Reportes
+        </button>
+        <button
+          className={`mobile-tab ${mobileActiveTab === 'calor' ? 'active' : ''}`}
+          onClick={() => setMobileActiveTab('calor')}
+        >
+          <FaFire /> Calor
+        </button>
+      </div>
+      <div className="mobile-content">
+        {mobileActiveTab === 'plagas' ? (
+          <div className="mobile-plagas-content">
+            {/* ... contenido existente de plagas ... */}
+          </div>
+        ) : mobileActiveTab === 'reportes' ? (
+          <div className="mobile-reportes-content">
+            {/* ... contenido existente de reportes ... */}
+          </div>
+        ) : (
+          <div className="mobile-heatmap-content">
+            <div className="mobile-heatmap-global-controls">
+              <label className="mobile-toggle-heatmap">
+                <input
+                  type="checkbox"
+                  checked={showHeatmap}
+                  onChange={() => setShowHeatmap(!showHeatmap)}
+                />
+                <span>Activar Mapa de Calor</span>
+              </label>
+
+              {showHeatmap && (
+                <>
+                  <div className="mobile-heatmap-slider">
+                    <label>Radio base: {heatmapRadius}px</label>
+                    <input
+                      type="range"
+                      min="5"
+                      max="50"
+                      value={heatmapRadius}
+                      onChange={(e) => setHeatmapRadius(parseInt(e.target.value))}
+                    />
+                  </div>
+
+                  <div className="mobile-heatmap-slider">
+                    <label>Intensidad: {heatmapIntensity.toFixed(1)}</label>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1"
+                      step="0.1"
+                      value={heatmapIntensity}
+                      onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
+                    />
+                  </div>
+
+                  <div className="mobile-heatmap-plagas-list">
+                    <h4>Plagas en mapa de calor</h4>
+                    {Object.entries(markerStyles)
+                      .filter(([_, style]) => style.heatmapEnabled)
+                      .map(([plagaId, style]) => (
+                        <div key={plagaId} className="mobile-heatmap-plaga-item">
+                          <div className="mobile-heatmap-plaga-header">
+                            <div
+                              className="mobile-color-badge"
+                              style={{ backgroundColor: style.color }}
+                            />
+                            <span>{plagas.find(p => p.id === plagaId)?.nombre || plagaId}</span>
+                            <button
+                              onClick={() => handleMarkerStyleChange(plagaId, 'heatmapEnabled', !style.heatmapEnabled)}
+                              className="mobile-heatmap-toggle"
+                            >
+                              {style.heatmapEnabled ? <FaEye /> : <FaEyeSlash />}
+                            </button>
+                          </div>
+
+                          {style.heatmapEnabled && (
+                            <div className="mobile-heatmap-plaga-controls">
+                              <div className="mobile-heatmap-slider">
+                                <label>Opacidad:</label>
+                                <input
+                                  type="range"
+                                  min="0.1"
+                                  max="1"
+                                  step="0.1"
+                                  value={style.heatmapOpacity || 0.7}
+                                  onChange={(e) => handleMarkerStyleChange(
+                                    plagaId,
+                                    'heatmapOpacity',
+                                    parseFloat(e.target.value)
+                                  )}
+                                />
+                              </div>
+
+                              <div className="mobile-heatmap-slider">
+                                <label>Radio:</label>
+                                <input
+                                  type="range"
+                                  min="5"
+                                  max="30"
+                                  value={style.heatmapRadius || 20}
+                                  onChange={(e) => handleMarkerStyleChange(
+                                    plagaId,
+                                    'heatmapRadius',
+                                    parseInt(e.target.value)
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+
+                  <button
+                    className="mobile-heatmap-button"
+                    onClick={updateAllHeatmaps}
+                  >
+                    <FaSync /> Actualizar todos los mapas
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

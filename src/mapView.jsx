@@ -319,9 +319,35 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
     setViewport(newViewport);
   }, []);
 
-  const handleDeleteCoord = useCallback((index) => {
-    setDrawCoords((coords) => coords.filter((_, i) => i !== index));
-  }, [setDrawCoords]);
+  const renderFeaturesToMap = useCallback((features) => {
+    const CHUNK_SIZE = 2000;
+    const totalChunks = Math.ceil(features.length / CHUNK_SIZE);
+
+    let accumulatedFeatures = [];
+
+    const loadChunk = (chunkIndex) => {
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = start + CHUNK_SIZE;
+      const chunk = features.slice(start, end);
+
+      // 🗺️ Dibuja directamente en el mapa (adaptar si tienes función específica)
+      // Aquí puedes agregar los puntos al mapa directamente si usas mapbox.addSource/addLayer
+      // Si no, puedes pasar esto a otra función más abajo.
+
+      accumulatedFeatures = [...accumulatedFeatures, ...chunk];
+
+      if (chunkIndex < totalChunks - 1) {
+        setTimeout(() => loadChunk(chunkIndex + 1), 30); // velocidad mejorada
+      } else {
+        setUploadedFeatures(accumulatedFeatures); // ⚠️ solo una vez al final
+        setIsLoading(false);
+      }
+    };
+
+    loadChunk(0);
+  }, []);
+
+
   //funcion para cargar csv
   const handleFileUpload = useCallback((fileEvent) => {
     const file = fileEvent.target.files[0];
@@ -351,21 +377,16 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
         return;
       }
 
-      // Simplificar los datos para guardar
       const simplified = features.map(f => ({
         x: f.properties.x,
         y: f.properties.y,
         plaga_id: f.properties.plaga_id,
       }));
 
-      // ✅ Guardar en IndexedDB
       await saveCoordenadasToIndexedDB(simplified);
 
-      // 💾 GUARDAR EN BACKEND
       const username = localStorage.getItem('username');
-      if (!username) {
-        console.error('⚠️ Usuario no encontrado en localStorage');
-      } else {
+      if (username) {
         try {
           const response = await fetch(`https://agroplagaspro-backend-1.onrender.com/api/coordenadas/${username}`, {
             method: 'POST',
@@ -381,27 +402,14 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
         } catch (err) {
           console.error('❌ Error al guardar coordenadas en el backend:', err);
         }
+      } else {
+        console.error('⚠️ Usuario no encontrado en localStorage');
       }
 
-      // Cargar en chunks en el mapa
-      const CHUNK_SIZE = 2000;
-      const totalChunks = Math.ceil(features.length / CHUNK_SIZE);
-
-      const loadChunk = (chunkIndex) => {
-        const start = chunkIndex * CHUNK_SIZE;
-        const end = start + CHUNK_SIZE;
-        const chunk = features.slice(start, end);
-        setUploadedFeatures((prev) => [...prev, ...chunk]);
-
-        if (chunkIndex < totalChunks - 1) {
-          setTimeout(() => loadChunk(chunkIndex + 1), 50);
-        } else {
-          setIsLoading(false);
-        }
-      };
-
-      loadChunk(0);
       worker.terminate();
+
+      // 👇 Aquí renderizas los features si quieres (o lo puedes hacer luego al volver al mapa)
+      await renderFeaturesToMap(features);
     };
 
     worker.onerror = (error) => {
@@ -417,7 +425,8 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
       worker.postMessage(csvText);
     };
     reader.readAsText(file, 'UTF-8');
-  }, []);
+  }, [renderFeaturesToMap]); // ✅ Agrega dependencia
+
 
   useEffect(() => {
     async function loadPlagasFromDB() {

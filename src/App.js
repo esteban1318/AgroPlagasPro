@@ -15,7 +15,14 @@ const AppContent = () => {
   const onLogout = () => setUser(null);
   const location = useLocation();
 const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+ const [polygonData, setPolygonData] = useState(null);
 
+  const handleMarkerClick = (data) => {
+    if (data?.type === 'polygon') {
+      setPolygonData(data);
+    }
+    // Manejar otros tipos de marcadores si es necesario
+  };
   const [filteredFeatures, setFilteredFeatures] = useState([]);
   const [selectedPlagas, setSelectedPlagas] = useState([]);
     const [markerStyles, setMarkerStyles] = useState(() => {
@@ -68,6 +75,7 @@ const updateMarkerStyles = (plagaId, newStyles) => {
   selectedPlagaId={selectedPlagaId}
    collapsed={sidebarCollapsed}
   setCollapsed={setSidebarCollapsed}
+  onMarkerClick={handleMarkerClick}
 />
       )}
       <Routes>
@@ -83,6 +91,7 @@ const updateMarkerStyles = (plagaId, newStyles) => {
               selectedPlagas={selectedPlagas}
                collapsed={sidebarCollapsed}
   setCollapsed={setSidebarCollapsed}
+  polygonData={polygonData}
             />
           }
         />

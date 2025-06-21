@@ -1,7 +1,18 @@
 import React, { useState, useCallback, useRef, useEffect, useContext, useMemo } from 'react';
-import { FaFire, FaEye, FaEyeSlash, FaSync, FaChevronLeft, FaChevronRight, FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt } from 'react-icons/fa';
+import {
+  FaTree,
+  FaDrawPolygon,
+  FaRulerCombined,
+  FaMapMarkerAlt,
+  FaSeedling,
+  FaTractor,
+  FaWater,
+  FaSun,
+  FaFire, FaEye, FaEyeSlash, FaSync, FaChevronLeft, FaChevronRight, FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt
+} from 'react-icons/fa';
 import './sidebarMapas.css';
 import PestFilterContext from './PestFilterContext';
+import Fincas from './Fincas.json';
 import { Navigate, useNavigate } from 'react-router-dom';
 
 const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
@@ -12,6 +23,8 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [heatmapRadius, setHeatmapRadius] = useState(20);
   const [heatmapIntensity, setHeatmapIntensity] = useState(0.6);
+  const [expandedFinca, setExpandedFinca] = useState(null);
+  const [fincasData, setFincasData] = useState([]);
   const {
     selectedPlagas,
     setSelectedPlagas,
@@ -259,6 +272,36 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
   }, [isMounted]);
 
   const sidebarRef = useRef(null);
+
+  const toggleFinca = (finca) => {
+    setExpandedFinca(expandedFinca === finca ? null : finca);
+  };
+
+  // Función para obtener colores únicos para cada finca
+  const getColorForFinca = (index) => {
+    const colors = ['#2E7D32', '#388E3C', '#1B5E20', '#4CAF50', '#8BC34A'];
+    return colors[index % colors.length];
+  };
+  // Función modificada handleShowPolygon
+  // En SidebarMapas.js
+  const handleShowPolygon = (finca) => {
+    console.log("Mostrando polígono para la finca:", finca.nombre);
+    if (!finca?.coordenadas) return;
+
+    if (onMarkerClick) {
+      onMarkerClick({
+        type: 'polygon',
+        coordinates: finca.coordenadas,
+        nombre: finca.nombre,
+        descripcion: finca.descripcion,
+        properties: {
+          area: finca.area,
+          cultivo: finca.cultivo
+        }
+      });
+    }
+  };
+
   return (
     <>
       <div
@@ -435,40 +478,50 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
 
         {/* Sección de Coordenadas */}
         <div className="sidebar-section">
-          <div className="section-header" onClick={() => toggleSection('coordenadas')}>
-            <FaMapMarkedAlt className="section-icon" />
-            <span>Reportes Recientes</span>
-            <FaChevronDown className={`chevron ${expandedSection === 'coordenadas' ? 'expanded' : ''}`} />
+          <div className="section-header" onClick={() => toggleSection('fincas')}>
+            <FaMap className="section-icon" />
+            <span>Fincas</span>
+            <FaChevronDown className={`chevron ${expandedSection === 'fincas' ? 'expanded' : ''}`} />
           </div>
-          {expandedSection === 'coordenadas' && (
+          {expandedSection === 'fincas' && (
             <div className="section-content">
-              {coordinates.map(coord => (
-                <div
-                  key={coord.id}
-                  className="coordinate-item"
-                  onClick={() => handleCoordinateClick(coord)}
-                >
-                  <div className="coordinate-marker" style={{
-                    backgroundColor: markerStyles[coord.plagaId]?.color || '#FF0000'
-                  }}>
-                    <FaBug />
+              {Fincas.map((finca) => {
+                // Generar un ID único para cada finca (usando el nombre en formato camelCase)
+                const fincaId = finca.nombre.toLowerCase().replace(/\s+/g, '');
+                const iconColor = getColorForFinca(Fincas.indexOf(finca));
+
+                return (
+                  <div key={fincaId} className="finca-item">
+                    <div className="finca-header" onClick={() => toggleFinca(fincaId)}>
+                      <FaTree className="finca-icon" style={{ color: iconColor }} />
+                      <span>{finca.nombre}</span>
+                      <FaChevronDown className={`chevron ${expandedFinca === fincaId ? 'expanded' : ''}`} />
+                    </div>
+                    {expandedFinca === fincaId && (
+                      <div className="finca-details">
+                        <div className="finca-info">
+                          {finca.area && <p><FaRulerCombined /> <strong>Área:</strong> {finca.area}</p>}
+                          {finca.cultivo && <p><FaSeedling /> <strong>Cultivo:</strong> {finca.cultivo}</p>}
+                          {finca.ubicacion && <p><FaMapMarkerAlt /> <strong>Ubicación:</strong> {finca.ubicacion}</p>}
+                          {finca.maquinaria && <p><FaTractor /> <strong>Maquinaria:</strong> {finca.maquinaria}</p>}
+                          {finca.riego && <p><FaWater /> <strong>Riego:</strong> {finca.riego}</p>}
+                          {finca.exposicion && <p><FaSun /> <strong>Exposición:</strong> {finca.exposicion}</p>}
+                        </div>
+                        <button
+                          className="show-polygon-btn"
+                          onClick={() => handleShowPolygon(finca)}
+                        >
+                          <FaDrawPolygon /> Mostrar polígono
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="coordinate-info">
-                    <div className="coordinate-plaga">
-                      {plagas.find(p => p.id === coord.plagaId)?.nombre}
-                    </div>
-                    <div className="coordinate-desc">
-                      {coord.descripcion.substring(0, 30)}...
-                    </div>
-                    <div className="coordinate-date">
-                      <FaInfoCircle /> {coord.fecha}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
+
       </div>
       <div className="mobile-sidebar-container">
         {console.log('renderizando boton flotante')}

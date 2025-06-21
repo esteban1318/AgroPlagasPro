@@ -69,7 +69,7 @@ const calcularDensidad = (feature, todasFeatures) => {
   const maxDensidad = 20; // Ajusta según tus datos
   return Math.min(featuresCercanas.length / maxDensidad, 1);
 };
-const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId, collapsed, setCollapsed }) => {
+const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, selectedPlagaId, collapsed, setCollapsed }) => {
   const { selectedPlagas } = useContext(PestFilterContext);
   const location = useLocation();
 
@@ -918,7 +918,24 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
     // }
   };
 
+  const polygonLayer = {
+    id: 'polygon-layer',
+    type: 'fill',
+    paint: {
+      'fill-color': '#3388ff',
+      'fill-opacity': 0.2,
+      'fill-outline-color': '#3388ff'
+    }
+  };
 
+  const polygonOutlineLayer = {
+    id: 'polygon-outline-layer',
+    type: 'line',
+    paint: {
+      'line-color': '#3388ff',
+      'line-width': 2
+    }
+  };
   return (
 
 
@@ -1057,6 +1074,23 @@ const MapView = ({ coordinates, filteredFeatures, markerStyles, selectedPlagaId,
           </Popup>
         )}
 
+        {polygonData && (
+          <Source
+            id="polygon-source"
+            type="geojson"
+            data={{
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [polygonData.coordinates] // Asegúrate que coordinates es un array de [lng, lat]
+              },
+              properties: {}
+            }}
+          >
+            <Layer {...polygonLayer} />
+            <Layer {...polygonOutlineLayer} />
+          </Source>
+        )}
 
       </Map>
       <div className="controls-container">

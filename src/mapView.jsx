@@ -161,18 +161,19 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     }
   }, [displayedFeatures]);
   //guardar en localstore
-  useEffect(() => {
-    try {
-      const compressedFeatures = compressData(uploadedFeatures);
-      if (compressedFeatures) {
-        localStorage.setItem('uploadedFeatures', compressedFeatures);
-      }
-      localStorage.setItem('mapStyle', mapStyle);
-      localStorage.setItem('mapViewport', JSON.stringify(viewport));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-  }, [uploadedFeatures, mapStyle, viewport]);
+
+  /* useEffect(() => {
+     try {
+       const compressedFeatures = compressData(uploadedFeatures);
+       if (compressedFeatures) {
+         localStorage.setItem('uploadedFeatures', compressedFeatures);
+       }
+       localStorage.setItem('mapStyle', mapStyle);
+       localStorage.setItem('mapViewport', JSON.stringify(viewport));
+     } catch (error) {
+       console.error('Error saving to localStorage:', error);
+     }
+   }, [uploadedFeatures, mapStyle, viewport]);*/
 
   useEffect(() => {
     const supercluster = new Supercluster({

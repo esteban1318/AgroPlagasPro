@@ -273,10 +273,9 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
 
   const sidebarRef = useRef(null);
 
-  const toggleFinca = (finca) => {
-    setExpandedFinca(expandedFinca === finca ? null : finca);
-  };
-
+ const toggleFinca = (fincaId) => {
+  setExpandedFinca(expandedFinca === fincaId ? null : fincaId);
+};
   // Función para obtener colores únicos para cada finca
   const getColorForFinca = (index) => {
     const colors = ['#2E7D32', '#388E3C', '#1B5E20', '#4CAF50', '#8BC34A'];
@@ -579,6 +578,18 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
             >
               <FaMapMarkedAlt /> Reportes
             </button>
+            <button
+              className={`mobile-tab ${mobileActiveTab === 'fincas' ? 'active' : ''}`}
+              onClick={() => setMobileActiveTab('fincas')}
+            >
+              <FaMap /> Fincas
+            </button>
+            {/* <button
+              className={`mobile-tab ${mobileActiveTab === 'calor' ? 'active' : ''}`}
+              onClick={() => setMobileActiveTab('calor')}
+            >
+              <FaFire /> Calor
+            </button>*/}
           </div>
 
           {/* Contenido de tabs */}
@@ -616,7 +627,7 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
                 ))}
               </div>
             ) : (
-              //menu lateral para mobiles
+              //seccion de reportes
               <div className="mobile-reportes-content">
                 {coordinates.map(coord => (
                   <div
@@ -640,8 +651,134 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
                     </div>
                   </div>
                 ))}
+                {mobileActiveTab === 'fincas' && (
+                  <div className="mobile-fincas-content">
+                    {Fincas.map((finca) => {
+                      const fincaId = finca.nombre.toLowerCase().replace(/\s+/g, '');
+                      const iconColor = getColorForFinca(Fincas.indexOf(finca));
+
+                      return (
+                        <div key={fincaId} className="mobile-finca-item">
+                          <div
+                            className="mobile-finca-header"
+                            onClick={() => toggleFinca(fincaId)}
+                          >
+                            <FaTree className="mobile-finca-icon" style={{ color: iconColor }} />
+                            <span>{finca.nombre}</span>
+                            <FaChevronDown className={`mobile-chevron ${expandedFinca === fincaId ? 'expanded' : ''}`} />
+                          </div>
+
+                          {expandedFinca === fincaId && (
+                            <div className="mobile-finca-details">
+                              <div className="mobile-finca-info">
+                                {finca.area && <p><FaRulerCombined /> <strong>Área:</strong> {finca.area}</p>}
+                                {finca.cultivo && <p><FaSeedling /> <strong>Cultivo:</strong> {finca.cultivo}</p>}
+                                {finca.ubicacion && <p><FaMapMarkerAlt /> <strong>Ubicación:</strong> {finca.ubicacion}</p>}
+                                {finca.maquinaria && <p><FaTractor /> <strong>Maquinaria:</strong> {finca.maquinaria}</p>}
+                                {finca.riego && <p><FaWater /> <strong>Riego:</strong> {finca.riego}</p>}
+                                {finca.exposicion && <p><FaSun /> <strong>Exposición:</strong> {finca.exposicion}</p>}
+                              </div>
+                              <button
+                                className="mobile-show-polygon-btn"
+                                onClick={() => handleShowPolygon(finca)}
+                              >
+                                <FaDrawPolygon /> Mostrar polígono
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {mobileActiveTab === 'calor' && (
+                  <div className="mobile-heatmap-content">
+                    <div className="heatmap-controls">
+                      <label className="heatmap-toggle">
+                        <input
+                          type="checkbox"
+                          checked={showHeatmap}
+                          onChange={() => setShowHeatmap(!showHeatmap)}
+                        />
+                        <span>Mostrar mapa de calor</span>
+                      </label>
+
+                      {showHeatmap && (
+                        <>
+                          <div className="heatmap-slider">
+                            <label>Radio: {heatmapRadius}px</label>
+                            <input
+                              type="range"
+                              min="5"
+                              max="50"
+                              value={heatmapRadius}
+                              onChange={(e) => setHeatmapRadius(parseInt(e.target.value))}
+                            />
+                          </div>
+
+                          <div className="heatmap-slider">
+                            <label>Intensidad: {heatmapIntensity.toFixed(1)}</label>
+                            <input
+                              type="range"
+                              min="0.1"
+                              max="1"
+                              step="0.1"
+                              value={heatmapIntensity}
+                              onChange={(e) => setHeatmapIntensity(parseFloat(e.target.value))}
+                            />
+                          </div>
+
+                          <div className="heatmap-plagas-list">
+                            <h4>Plagas en mapa de calor</h4>
+                            {Object.entries(markerStyles)
+                              .filter(([_, style]) => style.heatmapEnabled)
+                              .map(([plagaId, style]) => (
+                                <div key={plagaId} className="heatmap-plaga-item">
+                                  <div className="heatmap-plaga-header">
+                                    <div
+                                      className="color-badge"
+                                      style={{ backgroundColor: style.color }}
+                                    />
+                                    <span>{plagas.find(p => p.id === plagaId)?.nombre || plagaId}</span>
+                                    <button
+                                      onClick={() => handleMarkerStyleChange(plagaId, 'heatmapEnabled', !style.heatmapEnabled)}
+                                      className="heatmap-toggle-btn"
+                                    >
+                                      {style.heatmapEnabled ? <FaEye /> : <FaEyeSlash />}
+                                    </button>
+                                  </div>
+
+                                  {style.heatmapEnabled && (
+                                    <div className="heatmap-plaga-controls">
+                                      <div className="heatmap-slider">
+                                        <label>Opacidad:</label>
+                                        <input
+                                          type="range"
+                                          min="0.1"
+                                          max="1"
+                                          step="0.1"
+                                          value={style.heatmapOpacity || 0.7}
+                                          onChange={(e) => handleMarkerStyleChange(
+                                            plagaId,
+                                            'heatmapOpacity',
+                                            parseFloat(e.target.value)
+                                          )}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
+
             )}
+
           </div>
         </div>
 
@@ -660,12 +797,7 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
         >
           <FaMapMarkedAlt /> Reportes
         </button>
-        <button
-          className={`mobile-tab ${mobileActiveTab === 'calor' ? 'active' : ''}`}
-          onClick={() => setMobileActiveTab('calor')}
-        >
-          <FaFire /> Calor
-        </button>
+
       </div>
       <div className="mobile-content">
         {mobileActiveTab === 'plagas' ? (

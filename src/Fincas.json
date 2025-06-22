@@ -2,6 +2,12 @@
   {
     "nombre": "Finca Santa Bárbara",
     "descripcion": "Polígono completo de la finca Santa Bárbara",
+    "area": "3.5 hectáreas",
+    "cultivo": "Limón Tahití",
+    "ubicacion": "Vereda El Rodeo, Cundinamarca",
+    "maquinaria": "Tractor, fumigadora",
+    "riego": "Aspersión",
+    "exposicion": "Alta",
     "coordenadas": [
       [-74.8918613, 4.2378459],
       [-74.8911774, 4.2389105],

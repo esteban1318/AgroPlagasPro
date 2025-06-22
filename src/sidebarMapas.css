@@ -467,6 +467,8 @@
   color: #4a6baf;
   border-bottom-color: #4a6baf;
   font-weight: 500;
+  background-color: #353fff;
+  color: white;
 }
 
 /* Contenido */
@@ -628,7 +630,7 @@
   border-radius: 3px;
   background: #e0e0e0;
   outline: none;
-  -webkit-appearance: none;
+
 }
 
 .mobile-heatmap-slider input[type="range"]::-webkit-slider-thumb {
@@ -738,11 +740,6 @@
   }
 }
 
-/* Estilos para el tab de calor */
-.mobile-tab.active {
-  background-color: #ff6b35;
-  color: white;
-}
 
 /* Contenedor del mapa de calor */
 .mobile-heatmap-content {
@@ -855,4 +852,162 @@
 
 .show-polygon-btn:hover {
   background-color: #45a049;
+}
+
+/* Contenedor principal */
+.mobile-fincas-content {
+  padding: 10px;
+  background: #fff;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tarjeta de finca */
+.mobile-finca-item {
+  margin-bottom: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border: 1px solid #eaeaea;
+}
+
+/* Encabezado de finca */
+.mobile-finca-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.mobile-finca-header:hover {
+  background: #f1f3f5;
+}
+
+.mobile-finca-icon {
+  margin-right: 12px;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.mobile-finca-header span {
+  font-weight: 500;
+  color: #333;
+  font-size: 15px;
+  flex-grow: 1;
+}
+
+.mobile-chevron {
+  color: #666;
+  transition: transform 0.3s ease;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.mobile-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* Contenedor de detalles expandidos */
+.mobile-finca-details {
+
+  /* Mantenemos temporalmente para debug */
+  padding: 16px;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  display: block;
+  position: relative;
+  /* Añadido */
+  z-index: 1;
+  /* Asegura que esté por encima de otros elementos */
+  overflow: visible;
+  /* Asegura que el contenido no esté recortado */
+  animation: fadeIn 0.3s ease-out;
+  width: 100%;
+  /* Asegura el ancho completo */
+  box-sizing: border-box;
+  /* Incluye padding en el ancho */
+}
+
+/* Información de la finca */
+.mobile-finca-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+
+}
+
+.mobile-finca-info p {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 14px;
+  color: #444;
+  width: 100%;
+  position: relative;
+  z-index: 3;
+}
+
+.mobile-finca-info svg {
+  margin-right: 10px;
+  color: #666;
+  min-width: 16px;
+}
+
+.mobile-finca-info strong {
+  font-weight: 500;
+  margin-right: 5px;
+  color: #333;
+}
+
+/* Botón de polígono */
+.mobile-show-polygon-btn {
+  width: calc(100% - 32px);
+  /* Resta el padding */
+  margin: 15px auto 0;
+  padding: 12px;
+  background: #2c7be5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  z-index: 4;
+}
+
+.mobile-show-polygon-btn:hover {
+  background: #1a68d1;
+  transform: translateY(-1px);
+}
+
+.mobile-show-polygon-btn:active {
+  transform: translateY(0);
+}
+
+/* Animación */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+
+  to {
+    opacity: 1;
+    max-height: 500px;
+    /* Ajusta según necesidad */
+    overflow: visible;
+  }
 }

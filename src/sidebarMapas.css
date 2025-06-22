@@ -1011,3 +1011,29 @@
     overflow: visible;
   }
 }
+
+.remove-polygon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #dc3545;
+  /* Rojo Bootstrap */
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  gap: 8px;
+}
+
+.remove-polygon-btn:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+}
+
+.remove-polygon-btn:active {
+  transform: translateY(0);
+}

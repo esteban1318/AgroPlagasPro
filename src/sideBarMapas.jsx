@@ -15,7 +15,7 @@ import PestFilterContext from './PestFilterContext';
 import Fincas from './Fincas.json';
 import { Navigate, useNavigate } from 'react-router-dom';
 
-const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
+const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
   const [coordinates, setCoordinates] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
@@ -24,7 +24,8 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
   const [heatmapRadius, setHeatmapRadius] = useState(20);
   const [heatmapIntensity, setHeatmapIntensity] = useState(0.6);
   const [expandedFinca, setExpandedFinca] = useState(null);
-  const [fincasData, setFincasData] = useState([]);
+
+
   const {
     selectedPlagas,
     setSelectedPlagas,
@@ -273,9 +274,9 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
 
   const sidebarRef = useRef(null);
 
- const toggleFinca = (fincaId) => {
-  setExpandedFinca(expandedFinca === fincaId ? null : fincaId);
-};
+  const toggleFinca = (fincaId) => {
+    setExpandedFinca(expandedFinca === fincaId ? null : fincaId);
+  };
   // Función para obtener colores únicos para cada finca
   const getColorForFinca = (index) => {
     const colors = ['#2E7D32', '#388E3C', '#1B5E20', '#4CAF50', '#8BC34A'];
@@ -300,6 +301,12 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
       });
     }
   };
+  const mapRef = useRef(); // Esto debe estar al principio del componente
+  const handleRemovePolygon = () => {
+    console.log('🧽 Eliminando polígono (vía React)');
+    setPolygonData(null); // ✅ esto limpia el polígono del mapa
+  };
+
 
   return (
     <>
@@ -512,6 +519,8 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
                         >
                           <FaDrawPolygon /> Mostrar polígono
                         </button>
+                        <button onClick={handleRemovePolygon}>Ocultar Polígono</button>
+
                       </div>
                     )}
                   </div>
@@ -684,6 +693,8 @@ const SidebarMapas = ({ collapsed, setCollapsed, onFilterChange, onMarkerClick, 
                               >
                                 <FaDrawPolygon /> Mostrar polígono
                               </button>
+                              <button onClick={removePolygonFromMap}>Ocultar Polígono</button>
+
                             </div>
                           )}
                         </div>

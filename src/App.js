@@ -76,6 +76,7 @@ const updateMarkerStyles = (plagaId, newStyles) => {
    collapsed={sidebarCollapsed}
   setCollapsed={setSidebarCollapsed}
   onMarkerClick={handleMarkerClick}
+  setPolygonData={setPolygonData}
 />
       )}
       <Routes>

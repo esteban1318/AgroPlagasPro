@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  FaChartLine, 
-  FaChartBar, 
-  FaChartPie, 
+import {
+  FaChartLine,
+  FaChartBar,
+  FaChartPie,
   FaCalendarAlt,
   FaMapMarkedAlt,
   FaLeaf,
-  FaBug 
+  FaBug
 } from 'react-icons/fa';
 import './estadisticas.css';
 
@@ -49,7 +49,7 @@ const Estadisticas = () => {
       <h1 className="estadisticas-title">
         <FaChartLine /> Estadísticas de Plagas
       </h1>
-      
+
       {/* Resumen rápido */}
       <div className="resumen-rapido">
         <div className="resumen-card">
@@ -59,7 +59,7 @@ const Estadisticas = () => {
             <p>7 tipos</p>
           </div>
         </div>
-        
+
         <div className="resumen-card">
           <div className="resumen-icon"><FaMapMarkedAlt /></div>
           <div className="resumen-content">
@@ -67,7 +67,7 @@ const Estadisticas = () => {
             <p>3 de 5</p>
           </div>
         </div>
-        
+
         <div className="resumen-card">
           <div className="resumen-icon"><FaCalendarAlt /></div>
           <div className="resumen-content">
@@ -76,7 +76,7 @@ const Estadisticas = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Gráfico principal */}
       <div className="grafico-principal">
         <h2><FaChartBar /> Tendencia de Plagas (últimos 5 meses)</h2>
@@ -85,7 +85,7 @@ const Estadisticas = () => {
           <p>Gráfico interactivo mostrando {JSON.stringify(historicoPlagas)}</p>
         </div>
       </div>
-      
+
       {/* Tablas de datos */}
       <div className="tablas-estadisticas">
         <div className="tabla-plagas">
@@ -111,7 +111,7 @@ const Estadisticas = () => {
             </tbody>
           </table>
         </div>
-        
+
         <div className="tabla-zonas">
           <h2><FaMapMarkedAlt /> Zonas más afectadas</h2>
           <table>
@@ -138,15 +138,94 @@ const Estadisticas = () => {
           </table>
         </div>
       </div>
-      
-      {/* Mapa de calor */}
-      <div className="mapa-calor">
-        <h2><FaLeaf /> Mapa de distribución de plagas</h2>
-        <div className="mapa-placeholder">
-          {/* Aquí iría tu mapa de calor integrado con Leaflet, Google Maps, etc. */}
-          <p>Mapa interactivo mostrando distribución geográfica de plagas</p>
+
+      <div class="seccion-estadisticas">
+        <h2 class="titulo-seccion">Estadísticas de Muestra</h2>
+
+        <div class="contenedor-estadisticas">
+         
+          <div class="tarjeta-estadistica principal">
+            <div class="encabezado-tarjeta">
+              <h3>Muestra #9878</h3>
+              <span class="fecha">14/09/2024</span>
+            </div>
+            <div class="cuerpo-tarjeta">
+              <div class="campo">
+                <span class="etiqueta">Lote:</span>
+                <span class="valor">5-1_A-35</span>
+              </div>
+              <div class="campo">
+                <span class="etiqueta">Submuestra:</span>
+                <span class="valor">5-1_A-35-14</span>
+              </div>
+              <div class="campo">
+                <span class="etiqueta">Tipo:</span>
+                <span class="valor">Frutos</span>
+              </div>
+              <div class="campo">
+                <span class="etiqueta">Ubicación:</span>
+                <span class="valor">Medio - Externa</span>
+              </div>
+            </div>
+          </div>
+
+        
+          <div class="tarjeta-estadistica secundaria">
+            <div class="encabezado-tarjeta">
+              <h3>Detalles Técnicos</h3>
+            </div>
+            <div class="cuerpo-tarjeta">
+              <div class="campo">
+                <span class="etiqueta">Etapa:</span>
+                <span class="valor">Adulto</span>
+              </div>
+              <div class="campo">
+                <span class="etiqueta">Variedad:</span>
+                <span class="valor">5</span>
+              </div>
+              <div class="campo">
+                <span class="etiqueta">Técnico:</span>
+                <span class="valor">DARWINJ</span>
+              </div>
+              <div class="campo">
+                <span class="etiqueta">Plaga:</span>
+                <span class="valor">ACARO_4</span>
+              </div>
+            </div>
+          </div>
+
+       
+          <div class="tarjeta-estadistica ubicacion">
+            <div class="encabezado-tarjeta">
+              <h3>Ubicación Geográfica</h3>
+            </div>
+            <div class="cuerpo-tarjeta">
+              <div class="campo">
+                <span class="etiqueta">Finca:</span>
+                <span class="valor">VILLAS_2</span>
+              </div>
+              <div class="campo coordenadas">
+                <span class="etiqueta">Coordenadas:</span>
+                <span class="valor">4.2273° N, 74.9073° W</span>
+              </div>
+              <div class="mapa-miniatura">
+              
+                <div class="icono-mapa">🌍</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="resumen-estadistico">
+          <h3>Resumen Estadístico</h3>
+          <div class="graficos">
+           
+            <div class="grafico grafico-barras">[Gráfico de barras]</div>
+            <div class="grafico grafico-torta">[Gráfico circular]</div>
+          </div>
         </div>
       </div>
+
     </div>
   );
 };

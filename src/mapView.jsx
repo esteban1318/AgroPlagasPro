@@ -182,16 +182,10 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     });
     supercluster.load(uploadedFeatures);
     superclusterRef.current = supercluster;
-    const compressed = compressData(uploadedFeatures);
-    if (compressed) {
-      localStorage.setItem('uploadedFeatures', compressed);
-    }
-    // 2) Guardar la versión JSON pura
-    localStorage.setItem(
-      'uploadedFeaturesRaw',
-      JSON.stringify(uploadedFeatures)
-    );
+
+    // ❌ No guardar en localStorage
   }, [uploadedFeatures]);
+
 
   useEffect(() => {
     const map = mapRef.current;
@@ -206,7 +200,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
           const coords = f?.geometry?.coordinates;
           if (!coords || coords.length !== 2) return false;
           return bounds.contains(coords);
-        }).slice(0, 3000)
+        }).slice(0, 4000)
         : [];
 
       setVisibleFeatures(visible);
@@ -220,6 +214,8 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       map.off('moveend', updateVisibleFeatures);
     };
   }, [uploadedFeatures]);
+
+
 
 
   useEffect(() => {
@@ -355,7 +351,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     if (!file) return;
 
     setIsLoading(true);
-    setUploadedFeatures([]); // Limpiar datos previos
+    setUploadedFeatures([]); // Limpiar datos previos del mapa
 
     const worker = new Worker(new URL('./csvWorker.js', import.meta.url), {
       type: 'module',
@@ -378,21 +374,27 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
         return;
       }
 
+      // ✅ Datos simplificados para renderizar el mapa o guardar en localStorage si lo deseas
       const simplified = features.map(f => ({
         x: f.properties.x,
         y: f.properties.y,
         plaga_id: f.properties.plaga_id,
       }));
 
-      await saveCoordenadasToIndexedDB(simplified);
+      // ✅ Datos completos para IndexedDB y backend
+      const allProperties = features.map(f => f.properties);
 
+      // ✅ Guardar solo en IndexedDB (más seguro para datos grandes)
+      await saveCoordenadasToIndexedDB(allProperties);
+
+      // ✅ Enviar al backend
       const username = localStorage.getItem('username');
       if (username) {
         try {
           const response = await fetch(`https://agroplagaspro-backend-1.onrender.com/api/coordenadas/${username}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(simplified),
+            body: JSON.stringify(allProperties),
           });
 
           if (!response.ok) {
@@ -407,9 +409,10 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
         console.error('⚠️ Usuario no encontrado en localStorage');
       }
 
+      // ✅ Terminar worker
       worker.terminate();
 
-      // 👇 Aquí renderizas los features si quieres (o lo puedes hacer luego al volver al mapa)
+      // ✅ Renderizar el mapa (usa features originales con geometría)
       await renderFeaturesToMap(features);
     };
 
@@ -426,7 +429,8 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       worker.postMessage(csvText);
     };
     reader.readAsText(file, 'UTF-8');
-  }, [renderFeaturesToMap]); // ✅ Agrega dependencia
+  }, [renderFeaturesToMap]);
+
 
 
   useEffect(() => {
@@ -937,241 +941,301 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       'line-width': 2
     }
   };
+
+
+  //funcion para calcular las estadísticas
+  const stats1 = useMemo(() => {
+
+    const resumen = {
+      total: visibleFeatures.length,
+      plagas: {},
+      estados: {},
+      zonas: {},
+    };
+
+    visibleFeatures.forEach(f => {
+      const { plaga_id, estado, zona } = f.properties || {};
+
+      // Contador de plagas
+      if (plaga_id) {
+        resumen.plagas[plaga_id] = (resumen.plagas[plaga_id] || 0) + 1;
+      }
+
+      // Contador de estados
+      if (estado) {
+        resumen.estados[estado] = (resumen.estados[estado] || 0) + 1;
+      }
+
+      // Contador de zonas
+      if (zona) {
+        resumen.zonas[zona] = (resumen.zonas[zona] || 0) + 1;
+      }
+    });
+
+    return resumen;
+  }, [visibleFeatures]);
+
   return (
 
-
-    <div
-      className="map-container"
-      style={{
-        width: collapsed ? 'calc(100vw - 120px)' : 'calc(100vw - 235px)',
-        transition: 'width 0.3s ease',
-      }}
-    >
-
-
-      {showDbForm && (
-        <div className="db-form">
-          <h3>Conectar a PostgreSQL</h3>
-          <input
-            type="text"
-            placeholder="Host (ej: localhost)"
-            value={dbConfig.host}
-            onChange={(e) => setDbConfig({ ...dbConfig, host: e.target.value })}
-          />
-
-          <input
-            type="text"
-            placeholder="Base de datos"
-            value={dbConfig.database}
-            onChange={(e) => setDbConfig({ ...dbConfig, database: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Usuario"
-            value={dbConfig.user}
-            onChange={(e) => setDbConfig({ ...dbConfig, user: e.target.value })}
-          />
-
-          <select onChange={(e) => loadTableData(e.target.value)}>
-            <option value="">Selecciona una tabla</option>
-            {tables.map((table) => (
-              <option key={table} value={table}>{table}</option>
-            ))}
-          </select>
-          <button className='btnCargarTabla' onClick={() => setShowDbForm(false)}>Cerrar</button>
-        </div>
-      )}
-
-      <Map
-        ref={mapRef}
-        {...viewport}
-        onMove={handleMove}
-        mapStyle={mapStyle}
-        mapboxAccessToken="pk.eyJ1IjoicG92ZWRhMTMxOCIsImEiOiJjbWE5ZHA3YjgxcnN0MmtvYjBlYXFnNnI3In0.UXIOSfPa2AAH18GT0352uQ"
-        onClick={(event) => {
-          if (!dibujando) return;
-          const { lngLat } = event;
-          setDrawCoords((prev) => [...prev, { latitude: lngLat.lat, longitude: lngLat.lng }]);
+    <>
+      <div
+        className="map-container"
+        style={{
+          width: collapsed ? 'calc(100vw - 120px)' : 'calc(100vw - 235px)',
+          transition: 'width 0.3s ease',
         }}
-        onDblClick={(event) => {
-          event.preventDefault();
-          if (!dibujando || drawCoords.length < 3) return;
-          setDrawCoords((prev) => [...prev, prev[0]]);
-          setDibujando(false);
-        }}
-        onLoad={onLoad}
       >
 
-        <Source id='plagas-source' type='geojson' data={{ type: 'FeatureCollection', features: displayedFeatures }}>
-          {/* Capa para puntos no seleccionados */}
-          <Layer
-            id="plagas-layer-default"
-            type="circle"
-            filter={['!=', ['get', 'plaga_id'], selectedPlagaId]}
-            paint={{
-              'circle-radius': 3,
-              'circle-color': '#00FF00',
-              'circle-opacity': 0.6
-            }}
-          />
 
-          {/* Capa para el punto seleccionado */}
-          <Layer
-            id="plagas-layer-selected"
-            type="circle"
-            filter={['==', ['get', 'plaga_id'], selectedPlagaId]}
-            paint={{
-              'circle-radius': 4,
-              'circle-color': markerStyles[selectedPlagaId]?.color || '#FF0000',
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#FFFFFF',
-              'circle-opacity': 1
-            }}
-          />
-        </Source>
+        {showDbForm && (
+          <div className="db-form">
+            <h3>Conectar a PostgreSQL</h3>
+            <input
+              type="text"
+              placeholder="Host (ej: localhost)"
+              value={dbConfig.host}
+              onChange={(e) => setDbConfig({ ...dbConfig, host: e.target.value })}
+            />
 
+            <input
+              type="text"
+              placeholder="Base de datos"
+              value={dbConfig.database}
+              onChange={(e) => setDbConfig({ ...dbConfig, database: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Usuario"
+              value={dbConfig.user}
+              onChange={(e) => setDbConfig({ ...dbConfig, user: e.target.value })}
+            />
 
-        <Source id="square-source" type="geojson" data={{ type: 'FeatureCollection', features: shapeGroupedFeatures.square }}>
-          <Layer
-            id="square-layer"
-            type="symbol"
-            layout={{
-              'icon-image': 'square-icon',
-              'icon-size': 1
-            }}
-          />
-        </Source>
-
-        <Source id="triangle-source" type="geojson" data={{ type: 'FeatureCollection', features: shapeGroupedFeatures.triangle }}>
-          <Layer
-            id="triangle-layer"
-            type="symbol"
-            layout={{
-              'icon-image': 'triangle-icon',  // debe coincidir con el nombre usado en addImage
-              'icon-size': 0.03,
-              'icon-allow-overlap': true     // permite que los iconos se superpongan sin desaparecer
-            }}
-          />
-        </Source>
-        {lineFeatures.length > 0 && (
-          <Source id="lines-source" type="geojson" data={{ type: 'FeatureCollection', features: lineFeatures }}>
-            <Layer id="only-line-layer" type="line" paint={{ 'line-color': '#0000FF', 'line-width': 2 }} />
-          </Source>
+            <select onChange={(e) => loadTableData(e.target.value)}>
+              <option value="">Selecciona una tabla</option>
+              {tables.map((table) => (
+                <option key={table} value={table}>{table}</option>
+              ))}
+            </select>
+            <button className='btnCargarTabla' onClick={() => setShowDbForm(false)}>Cerrar</button>
+          </div>
         )}
 
-        {renderMarkers}
-
-        {selectedFeature && (
-          <Popup
-            latitude={selectedFeature.geometry.coordinates[1]}
-            longitude={selectedFeature.geometry.coordinates[0]}
-            onClose={() => setSelectedFeature(null)}
-            closeOnClick={false}
-            anchor="top"
-          >
-            <div>
-              <h4>Punto seleccionado</h4>
-            </div>
-          </Popup>
-        )}
-
-        {polygonData && (
-          <Source
-            id="polygon-source"
-            type="geojson"
-            data={{
-              type: 'Feature',
-              geometry: {
-                type: 'Polygon',
-                coordinates: [polygonData.coordinates] // Asegúrate que coordinates es un array de [lng, lat]
-              },
-              properties: {}
-            }}
-          >
-            <Layer {...polygonLayer} />
-            <Layer {...polygonOutlineLayer} />
-          </Source>
-        )}
-
-      </Map>
-      <div className="controls-container">
-        <button className="btn-inicio-terreno" onClick={() => setDibujando(!dibujando)}>
-          {dibujando ? '🛑 Terminar dibujo' : '🖊️ Iniciar dibujo'}
-        </button>
-
-        <button
-          className="btn-cerrar-terreno"
-          disabled={drawCoords.length < 3}
-          onClick={() => {
+        <Map
+          ref={mapRef}
+          {...viewport}
+          onMove={handleMove}
+          mapStyle={mapStyle}
+          mapboxAccessToken="pk.eyJ1IjoicG92ZWRhMTMxOCIsImEiOiJjbWE5ZHA3YjgxcnN0MmtvYjBlYXFnNnI3In0.UXIOSfPa2AAH18GT0352uQ"
+          onClick={(event) => {
+            if (!dibujando) return;
+            const { lngLat } = event;
+            setDrawCoords((prev) => [...prev, { latitude: lngLat.lat, longitude: lngLat.lng }]);
+          }}
+          onDblClick={(event) => {
+            event.preventDefault();
+            if (!dibujando || drawCoords.length < 3) return;
             setDrawCoords((prev) => [...prev, prev[0]]);
             setDibujando(false);
           }}
+          onLoad={onLoad}
         >
-          ✅ Cerrar terreno
-        </button>
 
-        <label className="btn-cargar-coords">
-          📥
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-          />
-        </label>
+          <Source id='plagas-source' type='geojson' data={{ type: 'FeatureCollection', features: displayedFeatures }}>
+            {/* Capa para puntos no seleccionados */}
+            <Layer
+              id="plagas-layer-default"
+              type="circle"
+              filter={['!=', ['get', 'plaga_id'], selectedPlagaId]}
+              paint={{
+                'circle-radius': 3,
+                'circle-color': '#00FF00',
+                'circle-opacity': 0.6
+              }}
+            />
 
-        <div className="map-controls">
+            {/* Capa para el punto seleccionado */}
+            <Layer
+              id="plagas-layer-selected"
+              type="circle"
+              filter={['==', ['get', 'plaga_id'], selectedPlagaId]}
+              paint={{
+                'circle-radius': 4,
+                'circle-color': markerStyles[selectedPlagaId]?.color || '#FF0000',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#FFFFFF',
+                'circle-opacity': 1
+              }}
+            />
+          </Source>
 
-          {mostrarMenu && (
-            <div className="menu-heatmap">
-              <ul>
-                <li className="px-3 py-2 hover:bg-gray-100 cursor-pointer">Opción 1</li>
-                <li className="px-3 py-2 hover:bg-gray-100 cursor-pointer">Opción 2</li>
-              </ul>
-            </div>
+
+          <Source id="square-source" type="geojson" data={{ type: 'FeatureCollection', features: shapeGroupedFeatures.square }}>
+            <Layer
+              id="square-layer"
+              type="symbol"
+              layout={{
+                'icon-image': 'square-icon',
+                'icon-size': 1
+              }}
+            />
+          </Source>
+
+          <Source id="triangle-source" type="geojson" data={{ type: 'FeatureCollection', features: shapeGroupedFeatures.triangle }}>
+            <Layer
+              id="triangle-layer"
+              type="symbol"
+              layout={{
+                'icon-image': 'triangle-icon',  // debe coincidir con el nombre usado en addImage
+                'icon-size': 0.03,
+                'icon-allow-overlap': true     // permite que los iconos se superpongan sin desaparecer
+              }}
+            />
+          </Source>
+          {lineFeatures.length > 0 && (
+            <Source id="lines-source" type="geojson" data={{ type: 'FeatureCollection', features: lineFeatures }}>
+              <Layer id="only-line-layer" type="line" paint={{ 'line-color': '#0000FF', 'line-width': 2 }} />
+            </Source>
           )}
-          <div className="layer-switcher">
-            <button
-              className="btn-cambiar-capa"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMostrarMenuCapas((prev) => !prev);
+
+          {renderMarkers}
+
+          {selectedFeature && (
+            <Popup
+              latitude={selectedFeature.geometry.coordinates[1]}
+              longitude={selectedFeature.geometry.coordinates[0]}
+              onClose={() => setSelectedFeature(null)}
+              closeOnClick={false}
+              anchor="top"
+            >
+              <div>
+                <h4>Punto seleccionado</h4>
+              </div>
+            </Popup>
+          )}
+
+          {polygonData && (
+            <Source
+              id="polygon-source"
+              type="geojson"
+              data={{
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [polygonData.coordinates] // Asegúrate que coordinates es un array de [lng, lat]
+                },
+                properties: {}
               }}
             >
-              <img src={droneIcon} alt="Cambiar capa" className="icono-boton" />
-            </button>
-            {mostrarMenuCapas && (
-              <div className="dropdown-layers">
-                {mapStyles.map((style) => (
-                  <button
-                    key={style.value}
-                    onClick={() => {
-                      setMapStyle(style.value);
-                      setMostrarMenuCapas(false);
-                    }}
-                  >
-                    {style.label}
-                  </button>
-                ))}
+              <Layer {...polygonLayer} />
+              <Layer {...polygonOutlineLayer} />
+            </Source>
+          )}
+
+        </Map>
+        <div className="controls-container">
+          <button className="btn-inicio-terreno" onClick={() => setDibujando(!dibujando)}>
+            {dibujando ? '🛑 Terminar dibujo' : '🖊️ Iniciar dibujo'}
+          </button>
+
+          <button
+            className="btn-cerrar-terreno"
+            disabled={drawCoords.length < 3}
+            onClick={() => {
+              setDrawCoords((prev) => [...prev, prev[0]]);
+              setDibujando(false);
+            }}
+          >
+            ✅ Cerrar terreno
+          </button>
+
+          <label className="btn-cargar-coords">
+            📥
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
+
+          <div className="map-controls">
+
+            {mostrarMenu && (
+              <div className="menu-heatmap">
+                <ul>
+                  <li className="px-3 py-2 hover:bg-gray-100 cursor-pointer">Opción 1</li>
+                  <li className="px-3 py-2 hover:bg-gray-100 cursor-pointer">Opción 2</li>
+                </ul>
               </div>
             )}
+            <div className="layer-switcher">
+              <button
+                className="btn-cambiar-capa"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMostrarMenuCapas((prev) => !prev);
+                }}
+              >
+                <img src={droneIcon} alt="Cambiar capa" className="icono-boton" />
+              </button>
+              {mostrarMenuCapas && (
+                <div className="dropdown-layers">
+                  {mapStyles.map((style) => (
+                    <button
+                      key={style.value}
+                      onClick={() => {
+                        setMapStyle(style.value);
+                        setMostrarMenuCapas(false);
+                      }}
+                    >
+                      {style.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+          <button className='btn-limpiar-coords' onClick={clearLocalStorageFeatures}>
+            🗑️
+          </button>
+
+          <button className='btn-conectar-db' onClick={connectToDatabase}>
+            📊
+          </button>
+          <button onClick={handleClearMap} className="btn-limpiar-mapa">
+            Limpiar Mapa
+          </button>
+
         </div>
-        <button className='btn-limpiar-coords' onClick={clearLocalStorageFeatures}>
-          🗑️
-        </button>
 
-        <button className='btn-conectar-db' onClick={connectToDatabase}>
-          📊
-        </button>
-        <button onClick={handleClearMap} className="btn-limpiar-mapa">
-          Limpiar Mapa
-        </button>
+      </div >
+      <div className="sidebar-estadisticas">
+        <h3>📊 Estadísticas Visibles</h3>
+        <p><strong>Total de puntos:</strong> {stats1.total}</p>
 
+        <h4>🦟 Plagas</h4>
+        <ul>
+          {Object.entries(stats1.plagas).map(([plaga, count]) => (
+            <li key={plaga}>{plaga}: {count}</li>
+          ))}
+        </ul>
+
+        <h4>🔬 Estados</h4>
+        <ul>
+          {Object.entries(stats1.estados).map(([estado, count]) => (
+            <li key={estado}>{estado}: {count}</li>
+          ))}
+        </ul>
+
+        <h4>🧭 Zonas</h4>
+        <ul>
+          {Object.entries(stats1.zonas).map(([zona, count]) => (
+            <li key={zona}>{zona}: {count}</li>
+          ))}
+        </ul>
       </div>
-
-    </div >
+    </>
   );
 };
 

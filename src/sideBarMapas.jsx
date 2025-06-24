@@ -307,6 +307,11 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
     setPolygonData(null); // ✅ esto limpia el polígono del mapa
   };
 
+  const removePolygonFromMap = () => {
+    console.log('🧽 Eliminando polígono (vía React)');
+    setPolygonData(null); // ✅ esto limpia el polígono del mapa
+  };
+
 
   return (
     <>

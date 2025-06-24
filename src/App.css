@@ -54,6 +54,10 @@
 
 /* Estilos para móviles (hasta 767px) */
 @media screen and (max-width: 767px) {
+  .sidebar-estadisticas {
+    display: none;
+  }
+
   .map-container {
     position: fixed !important;
     top: 60px !important;
@@ -434,4 +438,27 @@
 
 .btn-limpiar-mapa:active {
   transform: scale(0.97);
+}
+
+.sidebar-estadisticas {
+  position: absolute;
+  top: 10rem;
+  left: 270px;
+  /* 🧱 Deja espacio para tu sidebar (ej. 250px + margen) */
+  padding: 1rem;
+  width: 250px;
+  background-color: rgba(255, 255, 255, 0.35);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+  font-size: 0.9rem;
+}
+
+.sidebar-estadisticas h3,
+.sidebar-estadisticas h4 {
+  margin: 0.5rem 0;
+  font-size: 1rem;
 }

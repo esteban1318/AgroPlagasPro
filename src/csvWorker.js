@@ -33,10 +33,10 @@ addEventListener('message', (e) => {
       coordinates: [longitude, latitude]
     },
     properties: {
+      ...row,
        x: longitude,
     y: latitude,
-    plaga_id: row.plaga_id || '', 
-      // Agrega más campos si los vas a usar
+
     }
   };
 }).filter(Boolean);

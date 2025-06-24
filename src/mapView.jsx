@@ -974,6 +974,23 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
 
     return resumen;
   }, [visibleFeatures]);
+  useEffect(() => {
+    async function loadData() {
+      const data = await getCoordenadasFromIndexedDB();
+      if (data.length > 0) {
+        const geojson = data.map(d => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [d.x, d.y],
+          },
+          properties: d
+        }));
+        setUploadedFeatures(geojson);
+      }
+    }
+    loadData();
+  }, []);
 
   return (
 

@@ -15,15 +15,26 @@ addEventListener('message', (e) => {
       console.log('Web Worker: Procesando chunk', results.data);
    
       const feats = results.data.map(row => {
-  const longitude = parseFloat(row.x);
-  const latitude = parseFloat(row.y);
+  // Normalizar coordenadas: convertir coma decimal a punto
+  const rawX = typeof row.x === 'string' ? row.x.replace(',', '.').trim() : row.x;
+  const rawY = typeof row.y === 'string' ? row.y.replace(',', '.').trim() : row.y;
+
+  const longitude = parseFloat(rawX);
+  const latitude = parseFloat(rawY);
 
   if (
     isNaN(longitude) ||
     isNaN(latitude)
   ) {
-    console.warn('Web Worker: Fila inválida', row);
-    return null;
+   console.warn('❌ Coordenadas inválidas detectadas en el CSV:', {
+      originalX: row.x,
+      originalY: row.y,
+      parsedX: rawX,
+      parsedY: rawY,
+      longitude,
+      latitude,
+      fila: row
+    });
   }
 
   return {
@@ -34,12 +45,12 @@ addEventListener('message', (e) => {
     },
     properties: {
       ...row,
-       x: longitude,
-    y: latitude,
-
+      x: longitude,
+      y: latitude,
     }
   };
 }).filter(Boolean);
+
 
       allFeatures.push(...feats);
     },

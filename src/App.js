@@ -14,94 +14,97 @@ const AppContent = () => {
   const [user, setUser] = useState(null);
   const onLogout = () => setUser(null);
   const location = useLocation();
-const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
- const [polygonData, setPolygonData] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [polygonData, setPolygonData] = useState(null);
 
   const handleMarkerClick = (data) => {
     if (data?.type === 'polygon') {
       setPolygonData(data);
     }
-    // Manejar otros tipos de marcadores si es necesario
   };
+
   const [filteredFeatures, setFilteredFeatures] = useState([]);
   const [selectedPlagas, setSelectedPlagas] = useState([]);
-    const [markerStyles, setMarkerStyles] = useState(() => {
-  const defaultStyles = {};
-  // Ejemplo: Asigna colores iniciales a todas las plagas conocidas
-  const plagas = ['ACARO_1', 'AFIDOS_1', 'DIPTERO_1']; // Añade todas las plagas aquí
-  plagas.forEach(plagaId => {
-    defaultStyles[plagaId] = {
-      color: '#00FF00', // Verde por defecto
-      icon: 'bug',
-      shape: 'circle'
-    };
-  });
-  return defaultStyles;
-});
-  
-  // Función para actualizar estilos segura
-const updateMarkerStyles = (plagaId, newStyles) => {
-  setMarkerStyles(prev => ({
-    ...prev,
-    [plagaId]: {
-      ...(prev[plagaId] || { color: '#00FF00' }), // Fuerza verde si no existe
-      ...newStyles
-    }
-  }));
-};
   const [selectedPlagaId, setSelectedPlagaId] = useState(null);
 
- const handleFilterChange = useCallback((coords, styles) => {
-  setFilteredFeatures(coords);
-  setMarkerStyles(styles);
-}, []);
+  // ✅ Aquí agregamos el estado de rango de fechas
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+
+  const [markerStyles, setMarkerStyles] = useState(() => {
+    const defaultStyles = {};
+    const plagas = ['ACARO_1', 'AFIDOS_1', 'DIPTERO_1'];
+    plagas.forEach(plagaId => {
+      defaultStyles[plagaId] = {
+        color: '#00FF00',
+        icon: 'bug',
+        shape: 'circle'
+      };
+    });
+    return defaultStyles;
+  });
+
+  const updateMarkerStyles = (plagaId, newStyles) => {
+    setMarkerStyles(prev => ({
+      ...prev,
+      [plagaId]: {
+        ...(prev[plagaId] || { color: '#00FF00' }),
+        ...newStyles
+      }
+    }));
+  };
+
+  const handleFilterChange = useCallback((coords, styles) => {
+    setFilteredFeatures(coords);
+    setMarkerStyles(styles);
+  }, []);
 
   const isAuthPath = ['/login'].includes(location.pathname);
 
   return (
     <PestFilterProvider>
-      {/* Navbar visible en todas las rutas excepto login */}
       {!isAuthPath && <NavBar user={user} onLogout={onLogout} />}
-      {/* SidebarMapas visible en mapa, plagas, reportes */}
+
       {!isAuthPath && location.pathname === '/mapa' && (
-        /*<SidebarMapas
+        <SidebarMapas
           onFilterChange={handleFilterChange}
           setSelectedPlagaId={setSelectedPlagaId}
           selectedPlagaId={selectedPlagaId}
-        />*/
-        <SidebarMapas
-  onFilterChange={handleFilterChange}
-  setSelectedPlagaId={setSelectedPlagaId}
-  selectedPlagaId={selectedPlagaId}
-   collapsed={sidebarCollapsed}
-  setCollapsed={setSidebarCollapsed}
-  onMarkerClick={handleMarkerClick}
-  setPolygonData={setPolygonData}
-/>
+          collapsed={sidebarCollapsed}
+          setCollapsed={setSidebarCollapsed}
+          onMarkerClick={handleMarkerClick}
+          setPolygonData={setPolygonData}
+          dateRange={dateRange}       // ✅ ahora existe
+          setDateRange={setDateRange} // ✅ ahora existe
+        />
       )}
+
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
-        <Route
-          path="/mapa"
-          element={
-            <MapView
-              filteredFeatures={filteredFeatures}
-              markerStyles={markerStyles}
-              selectedPlagaId={selectedPlagaId}
-              selectedPlagas={selectedPlagas}
-               collapsed={sidebarCollapsed}
-  setCollapsed={setSidebarCollapsed}
-  polygonData={polygonData}
-            />
-          }
-        />
+       <Route
+  path="/mapa"
+  element={
+    <MapView
+      filteredFeatures={filteredFeatures}
+      markerStyles={markerStyles}
+      selectedPlagaId={selectedPlagaId}
+      selectedPlagas={selectedPlagas}
+      collapsed={sidebarCollapsed}
+      setCollapsed={setSidebarCollapsed}
+      polygonData={polygonData}
+      dateRange={dateRange}       // ✅ agregar
+      setDateRange={setDateRange} // ✅ agregar
+    />
+  }
+/>
+
         <Route path="/plagas" element={<PlagasView />} />
         <Route path="/reportes" element={<Estadisticas />} />
       </Routes>
     </PestFilterProvider>
   );
 };
+
 
 const App = () => (
   <Router basename='/'>

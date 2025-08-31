@@ -106,6 +106,7 @@
   }
 
   .map-container {
+
     width: 173vh;
     height: 85vh;
   }
@@ -441,12 +442,13 @@
 }
 
 .sidebar-estadisticas {
-  position: absolute;
-  top: 10rem;
+  position: fixed;
+  top: 5rem;
   left: 270px;
   /* 🧱 Deja espacio para tu sidebar (ej. 250px + margen) */
   padding: 1rem;
   width: 250px;
+  height: 450px;
   background-color: rgba(255, 255, 255, 0.35);
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -461,4 +463,62 @@
 .sidebar-estadisticas h4 {
   margin: 0.5rem 0;
   font-size: 1rem;
+}
+
+.btn-cerrar-estadisticas {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-cerrar-estadisticas:hover {
+  color: red;
+}
+
+/* Botón flotante */
+.btn-navbar {
+  position: fixed;
+  /* flotante */
+  top: 50px;
+  /* separado desde arriba */
+  left: 230px;
+  /* separado desde la izquierda */
+  background: transparent;
+  /* azul oscuro elegante */
+  border: none;
+  border-radius: 50%;
+  /* redondo */
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease, transform 0.2s ease;
+  z-index: 1000;
+  /* que quede sobre todo */
+}
+
+/* Imagen dentro del botón */
+.btn-navbar .btnEstadisticasRapidas {
+  width: 24px;
+  height: 24px;
+  filter: invert(1);
+  /* vuelve blanco el ícono si es oscuro */
+}
+
+/* Hover */
+.btn-navbar:hover {
+  background: #334155;
+  /* un poco más claro */
+  transform: scale(1.1);
+}
+
+/* Active (clic presionado) */
+.btn-navbar:active {
+  transform: scale(0.95);
 }

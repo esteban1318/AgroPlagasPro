@@ -13,12 +13,13 @@ async function getDB() {
           keyPath: 'id',
           autoIncrement: true
         });
-        console.log('📦 Store "coordenadas" creado');
+        console.log('📦 Store "coordenadas" creada');
       }
     }
   });
 }
 
+// Guarda coordenadas
 export async function saveCoordenadasToIndexedDB(data) {
   const db = await getDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -29,11 +30,13 @@ export async function saveCoordenadasToIndexedDB(data) {
   console.log('✅ Coordenadas guardadas');
 }
 
+// Obtiene todas las coordenadas
 export async function getCoordenadasFromIndexedDB() {
   const db = await getDB();
   return db.getAll(STORE_NAME);
 }
 
+// Elimina todas las coordenadas
 export async function deleteCoordenadasFromIndexedDB() {
   const db = await getDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');

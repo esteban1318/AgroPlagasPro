@@ -16,7 +16,7 @@ import {
   getCoordenadasFromIndexedDB,
   deleteCoordenadasFromIndexedDB // <-- ¡importar aquí!
 } from './indexedDB'; // Ajusta la ruta si está en otra carpeta
-
+import btnLlamarEstadisticas from './iconos/btn-abrir-Est-rapidas.png';
 
 
 //import DbConnectionForm from './DbConnectionForm';
@@ -69,7 +69,7 @@ const calcularDensidad = (feature, todasFeatures) => {
   const maxDensidad = 20; // Ajusta según tus datos
   return Math.min(featuresCercanas.length / maxDensidad, 1);
 };
-const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, selectedPlagaId, collapsed, setCollapsed }) => {
+const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, selectedPlagaId, collapsed, setCollapsed, dateRange, setDateRange }) => {
   const { selectedPlagas } = useContext(PestFilterContext);
   const location = useLocation();
 
@@ -104,7 +104,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
   const savedViewport = JSON.parse(localStorage.getItem('mapViewport')) || {
     latitude: 4.5709,
     longitude: -74.2973,
-    zoom: 6,
+    zoom: 15,
   };
 
   const menuRef = useRef(null);
@@ -133,6 +133,25 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
   const superclusterRef = useRef(null);
   const { drawCoords, setDrawCoords } = useMapStore();
   const [mostrarHeatmap, setMostrarHeatmap] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const savedSidebarState = localStorage.getItem("sidebarOpen");
+    return savedSidebarState !== null ? JSON.parse(savedSidebarState) : true; // true = abierto por defecto
+  });
+  const [filteredData, setFilteredData] = useState([]);
+  const [features, setFeatures] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getCoordenadasFromIndexedDB();
+        console.log("Datos de IndexedDB:", data);
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+      }
+    }
+    fetchData();
+  }, []);
+
   //redirigir desde boton con plaga
   /* useEffect(() => {
      if (location.state?.pestName) {
@@ -162,18 +181,17 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
   }, [displayedFeatures]);
   //guardar en localstore
 
-  /* useEffect(() => {
-     try {
-       const compressedFeatures = compressData(uploadedFeatures);
-       if (compressedFeatures) {
-         localStorage.setItem('uploadedFeatures', compressedFeatures);
-       }
-       localStorage.setItem('mapStyle', mapStyle);
-       localStorage.setItem('mapViewport', JSON.stringify(viewport));
-     } catch (error) {
-       console.error('Error saving to localStorage:', error);
-     }
-   }, [uploadedFeatures, mapStyle, viewport]);*/
+  // ✅ Solo guarda estilo y zoom
+  useEffect(() => {
+    if (mapStyle) {
+      localStorage.setItem("mapStyle", mapStyle);
+    }
+  }, [mapStyle]);
+
+  // Efecto para guardar el estado cada vez que cambie
+  useEffect(() => {
+    localStorage.setItem("sidebarOpen", JSON.stringify(isSidebarOpen));
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     const supercluster = new Supercluster({
@@ -186,7 +204,23 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     // ❌ No guardar en localStorage
   }, [uploadedFeatures]);
 
+  const filteredByDate = useMemo(() => {
+    if (!dateRange.start && !dateRange.end) return filteredFeatures;
 
+    const start = dateRange.start ? new Date(dateRange.start) : null;
+    const end = dateRange.end ? new Date(dateRange.end) : null;
+
+    return filteredFeatures.filter((f) => {
+      const fecha = new Date(f.properties.fecha); // 👈 asegúrate de tener fecha en tus datos
+      const validStart = start ? fecha >= start : true;
+      const validEnd = end ? fecha <= end : true;
+      return validStart && validEnd;
+    });
+  }, [filteredFeatures, dateRange]);
+
+  useEffect(() => {
+    // aquí ya actualizas la capa/markers con filteredByDate
+  }, [filteredByDate]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || uploadedFeatures.length === 0) return;
@@ -214,8 +248,15 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       map.off('moveend', updateVisibleFeatures);
     };
   }, [uploadedFeatures]);
-
-
+  const handleDateChange = async (range) => {
+    // Consultamos IndexedDB y filtramos
+    const allData = await getAllDataFromIndexedDB(); // tu función de lectura
+    const filtered = allData.filter(item => {
+      const itemDate = new Date(item.fecha);
+      return itemDate >= new Date(range.start) && itemDate <= new Date(range.end);
+    });
+    setFilteredData(filtered);
+  };
 
 
   useEffect(() => {
@@ -256,6 +297,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
         setMostrarMenu(false);
       }
     };
+
 
     document.addEventListener('mousedown', handleClickOutside);
 
@@ -992,6 +1034,21 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     loadData();
   }, []);
 
+  const [mostrarSidebar, setMostrarSidebar] = useState(true);
+  const handleCloseSidebar = () => {
+    setMostrarSidebar(false);
+  };
+
+  // Guarda el viewport (zoom, lat, lng) en localStorage
+  useEffect(() => {
+    try {
+      if (viewport) {
+        localStorage.setItem("mapViewport", JSON.stringify(viewport));
+      }
+    } catch (error) {
+      console.error("Error guardando viewport:", error);
+    }
+  }, [viewport]);
   return (
 
     <>
@@ -1084,7 +1141,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
               }}
             />
           </Source>
-
+          <pre>{JSON.stringify(features, null, 2)}</pre>
 
           <Source id="square-source" type="geojson" data={{ type: 'FeatureCollection', features: shapeGroupedFeatures.square }}>
             <Layer
@@ -1226,32 +1283,62 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
 
         </div>
 
-      </div >
-      <div className="sidebar-estadisticas">
-        <h3>📊 Estadísticas Visibles</h3>
-        <p><strong>Total de puntos:</strong> {stats1.total}</p>
-
-        <h4>🦟 Plagas</h4>
-        <ul>
-          {Object.entries(stats1.plagas).map(([plaga, count]) => (
-            <li key={plaga}>{plaga}: {count}</li>
-          ))}
-        </ul>
-
-        <h4>🔬 Estados</h4>
-        <ul>
-          {Object.entries(stats1.estados).map(([estado, count]) => (
-            <li key={estado}>{estado}: {count}</li>
-          ))}
-        </ul>
-
-        <h4>🧭 Zonas</h4>
-        <ul>
-          {Object.entries(stats1.zonas).map(([zona, count]) => (
-            <li key={zona}>{zona}: {count}</li>
-          ))}
-        </ul>
       </div>
+
+      {!mostrarSidebar && (
+        <button
+          onClick={() => setMostrarSidebar(true)}
+          className="btn-navbar"
+        >
+          <img className='btnEstadisticasRapidas' src={btnLlamarEstadisticas} alt="Abrir estadísticas" />
+        </button>
+      )}
+
+
+
+      {mostrarSidebar && (
+        <div className="sidebar-estadisticas">
+          <button
+            className="btn-cerrar-estadisticas"
+            onClick={handleCloseSidebar}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+              fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M18 6L6 18M6 6l12 12"
+                stroke="currentColor"
+                strokeWidth="2"   // 👈 en React es camelCase
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+
+          <h3>📊 Estadísticas Visibles</h3>
+          <p><strong>Total de puntos:</strong> {stats1.total}</p>
+
+          <h4>🦟 Plagas</h4>
+          <ul>
+            {Object.entries(stats1.plagas).map(([plaga, count]) => (
+              <li key={plaga}>{plaga}: {count}</li>
+            ))}
+          </ul>
+
+          <h4>🔬 Estados</h4>
+          <ul>
+            {Object.entries(stats1.estados).map(([estado, count]) => (
+              <li key={estado}>{estado}: {count}</li>
+            ))}
+          </ul>
+
+          <h4>🧭 Zonas</h4>
+          <ul>
+            {Object.entries(stats1.zonas).map(([zona, count]) => (
+              <li key={zona}>{zona}: {count}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
     </>
   );
 };

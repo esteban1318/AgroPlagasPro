@@ -8,11 +8,13 @@ import {
   FaTractor,
   FaWater,
   FaSun,
-  FaFire, FaEye, FaEyeSlash, FaSync, FaChevronLeft, FaChevronRight, FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt
+  FaFire, FaEye, FaEyeSlash, FaSync, FaChevronLeft,
+  FaCalendarAlt, FaChevronRight, FaMap, FaSearch, FaPlus, FaLayerGroup, FaChevronDown, FaBug, FaTimes, FaInfoCircle, FaMapMarkedAlt
 } from 'react-icons/fa';
 import './sidebarMapas.css';
 import PestFilterContext from './PestFilterContext';
 import Fincas from './Fincas.json';
+import { getCoordenadasFromIndexedDB } from './indexedDB';
 import { Navigate, useNavigate } from 'react-router-dom';
 
 const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
@@ -24,6 +26,7 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
   const [heatmapRadius, setHeatmapRadius] = useState(20);
   const [heatmapIntensity, setHeatmapIntensity] = useState(0.6);
   const [expandedFinca, setExpandedFinca] = useState(null);
+  const [datosFiltrados, setDatosFiltrados] = useState([]);
 
 
   const {
@@ -313,6 +316,174 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
   };
 
 
+  // Estados para el filtrado por fecha
+  const [dateRange, setDateRange] = useState({
+    start: null,
+    end: null
+  });
+  const [activeQuickDate, setActiveQuickDate] = useState(null);
+
+  // Manejadores para el filtrado por fecha
+  const handleDateChange = (type, value) => {
+    setDateRange((prev) => {
+      const next = { ...prev, [type]: value };
+
+      // Si el usuario pone start > end, ajustamos el otro extremo.
+      if (next.start && next.end && next.start > next.end) {
+        if (type === "start") next.end = next.start;
+        if (type === "end") next.start = next.end;
+      }
+
+      return next;
+    });
+    setActiveQuickDate(null);
+  };
+
+  // Convierte 'YYYY-MM-DD' a Date **local** (no UTC)
+  const toLocalDate = (s) => {
+    if (!s) return null;
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  // Fin del día local (23:59:59.999) para inclusividad del "Hasta"
+  const endOfDayLocal = (date) =>
+    date ? new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999) : null;
+
+  // Formatea Date -> 'YYYY-MM-DD' **en local**
+  const pad = (n) => (n < 10 ? `0${n}` : `${n}`);
+  const dateToInput = (date) =>
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+  const handleQuickDateSelect = (preset) => {
+    if (preset === "clear") {
+      setDateRange({ start: null, end: null });
+      setActiveQuickDate(null);
+      return;
+    }
+
+    const today = new Date();
+    const endStr = dateToInput(today);
+    const start = new Date(today);
+
+    if (preset === "week") start.setDate(start.getDate() - 6);   // últimos 7 días incl. hoy
+    if (preset === "month") start.setDate(start.getDate() - 29); // últimos 30 días
+    if (preset === "year") start.setDate(start.getDate() - 364); // últimos 365 días
+
+    setDateRange({ start: dateToInput(start), end: endStr });
+    setActiveQuickDate(preset);
+  };
+
+  // Normaliza strings como "2/01/2025", "02-01-2025", "2.1.2025"
+  function normalizarFechaDDMMYYYY(f) {
+    if (!f) return null;
+    if (f instanceof Date) return Number.isNaN(f.getTime()) ? null : f;
+
+    const s = String(f).trim();
+    const match = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+    if (!match) return null;
+
+    let [, d, m, y] = match;
+    d = Number(d); m = Number(m); y = Number(y);
+
+    if (y < 100) y += 2000;
+
+    if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12 && y > 0)) return null;
+
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() !== y || date.getMonth() !== (m - 1) || date.getDate() !== d) {
+      return null;
+    }
+    return date;
+  }
+
+  // Devuelve timestamp (ms) a partir de cualquier formato válido
+  const getPlagaTime = (f) => {
+    if (!f) return NaN;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(f)) {
+      const d = toLocalDate(f);
+      return d ? d.getTime() : NaN;
+    }
+
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(f)) {
+      const d = normalizarFechaDDMMYYYY(f);
+      return d ? d.getTime() : NaN;
+    }
+
+    const d = new Date(f);
+    return Number.isNaN(d.getTime()) ? NaN : d.getTime();
+  };
+
+  console.log("Todas las plagas con fechas normalizadas:");
+  plagas.forEach(p => console.log(p.fecha, getPlagaTime(p.fecha)));
+
+  // --- Aplica el filtro de fechas al hacer click en el botón ---
+  async function aplicarFiltros() {
+    const data = await getCoordenadasFromIndexedDB();
+
+    const startDate = normalizarFechaDDMMYYYY(dateRange.start);
+    const endDate = normalizarFechaDDMMYYYY(dateRange.end);
+
+    if (!startDate || !endDate) {
+      console.warn("Fechas inválidas");
+      return;
+    }
+
+    const filtrados = datos.filter(item => {
+      if (!item.fecha) return false;
+      const fecha = normalizarFechaDDMMYYYY(item.fecha);
+      return fecha >= startDate && fecha <= endDate;
+    });
+
+    console.log("✅ Plagas filtradas:", filtrados);
+    setDatosFiltrados(filtrados);
+  }
+
+  // 🔍 Función para traer plagas por rango de fechas desde IndexedDB
+  const getDBPlagas = async () => {
+    return openDB("miDB", 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains("plagas")) {
+          db.createObjectStore("plagas", { keyPath: "id", autoIncrement: true });
+          console.log('Store "plagas" creada');
+        }
+      }
+    });
+  };
+
+  const getPlagasByDateRange = async (startDate, endDate) => {
+    const db = await getDBPlagas(); // ✅ Asegura que el store existe
+    const tx = db.transaction("plagas", "readonly");
+    const store = tx.objectStore("plagas");
+
+    const allPlagas = [];
+    let cursor = await store.openCursor();
+
+    while (cursor) {
+      const plaga = cursor.value;
+      const fechaPlaga = new Date(plaga.fecha);
+      if ((!startDate || fechaPlaga >= new Date(startDate)) &&
+        (!endDate || fechaPlaga <= new Date(endDate))) {
+        allPlagas.push(plaga);
+      }
+      cursor = await cursor.continue();
+    }
+
+    return allPlagas;
+  };
+
+  useEffect(() => {
+    if (dateRange.start && dateRange.end) {
+      getPlagasByDateRange(dateRange.start, dateRange.end)
+        .then((res) => {
+          console.log("✅ Plagas filtradas por rango:", res);
+          setPlagasFiltradas(res);
+        })
+        .catch((err) => console.error("Error consultando IndexedDB:", err));
+    }
+  }, [dateRange]);
+
   return (
     <>
       <div
@@ -461,6 +632,74 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
                   )}
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="sidebar-section">
+          <div className="section-header" onClick={() => toggleSection('fechas')}>
+            <FaCalendarAlt className="section-icon" />
+            {!collapsed && (
+              <>
+                <span>Filtrar por Fecha</span>
+                <FaChevronDown className={`chevron ${expandedSection === 'fechas' ? 'expanded' : ''}`} />
+              </>
+            )}
+          </div>
+          {expandedSection === 'fechas' && !collapsed && (
+            <div className="section-content date-filter-content">
+              <div className="date-range-selector">
+                <div className="date-input-group">
+                  <label>Desde:</label>
+                  <input
+                    type="date"
+                    value={dateRange.start || ''}
+                    onChange={(e) => handleDateChange('start', e.target.value)}
+                    max={dateRange.end || ''}
+                  />
+                </div>
+
+                <div className="date-input-group">
+                  <label>Hasta:</label>
+                  <input
+                    type="date"
+                    value={dateRange.end || ''}
+                    onChange={(e) => handleDateChange('end', e.target.value)}
+                    min={dateRange.start || ''}
+                  />
+                </div>
+              </div>
+
+              <div className="quick-date-buttons">
+                <button
+                  className={`quick-date-btn ${activeQuickDate === 'week' ? 'active' : ''}`}
+                  onClick={() => handleQuickDateSelect('week')}
+                >
+                  Última semana
+                </button>
+                <button
+                  className={`quick-date-btn ${activeQuickDate === 'month' ? 'active' : ''}`}
+                  onClick={() => handleQuickDateSelect('month')}
+                >
+                  Último mes
+                </button>
+                <button
+                  className={`quick-date-btn ${activeQuickDate === 'year' ? 'active' : ''}`}
+                  onClick={() => handleQuickDateSelect('year')}
+                >
+                  Último año
+                </button>
+                <button
+                  className="quick-date-btn"
+                  onClick={() => handleQuickDateSelect('clear')}
+                >
+                  Limpiar
+                </button>
+              </div>
+              <button className="apply-filters-btn" onClick={aplicarFiltros}>
+                Aplicar Filtros
+              </button>
+
             </div>
           )}
         </div>

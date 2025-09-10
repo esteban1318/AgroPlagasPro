@@ -1121,7 +1121,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
               type="circle"
               filter={['!=', ['get', 'plaga_id'], selectedPlagaId]}
               paint={{
-                'circle-radius': 3,
+                'circle-radius': 2,
                 'circle-color': '#00FF00',
                 'circle-opacity': 0.6
               }}

@@ -17,7 +17,7 @@ import Fincas from './Fincas.json';
 import { getCoordenadasFromIndexedDB } from './indexedDB';
 import { Navigate, useNavigate } from 'react-router-dom';
 
-const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
+const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, onFilterChange, onMarkerClick, setSelectedPlagaId, selectedPlagaId }) => {
   const [coordinates, setCoordinates] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
@@ -27,7 +27,7 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
   const [heatmapIntensity, setHeatmapIntensity] = useState(0.6);
   const [expandedFinca, setExpandedFinca] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
-
+  const [showAllPolygons, setShowAllPolygons] = useState(false);
 
   const {
     selectedPlagas,
@@ -285,25 +285,8 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
     const colors = ['#2E7D32', '#388E3C', '#1B5E20', '#4CAF50', '#8BC34A'];
     return colors[index % colors.length];
   };
-  // Función modificada handleShowPolygon
-  // En SidebarMapas.js
-  const handleShowPolygon = (finca) => {
-    console.log("Mostrando polígono para la finca:", finca.nombre);
-    if (!finca?.coordenadas) return;
 
-    if (onMarkerClick) {
-      onMarkerClick({
-        type: 'polygon',
-        coordinates: finca.coordenadas,
-        nombre: finca.nombre,
-        descripcion: finca.descripcion,
-        properties: {
-          area: finca.area,
-          cultivo: finca.cultivo
-        }
-      });
-    }
-  };
+
   const mapRef = useRef(); // Esto debe estar al principio del componente
   const handleRemovePolygon = () => {
     console.log('🧽 Eliminando polígono (vía React)');
@@ -483,7 +466,73 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
         .catch((err) => console.error("Error consultando IndexedDB:", err));
     }
   }, [dateRange]);
+  //
+  // Mostrar todos los polígonos
 
+
+  const handleShowPolygon = (feature) => {
+    console.log("📍 handleShowPolygon recibió:", feature);
+
+    if (!feature) {
+      console.error("❌ Feature es undefined");
+      return;
+    }
+
+    if (!mapRef.current) return;
+
+    const id = `finca-${feature.properties?.id}`;
+    console.log("🆔 ID capa:", id);
+
+    // Verifica coordenadas
+    if (!feature.geometry?.coordinates) {
+      console.error("⚠️ La geometría no tiene coordenadas:", feature.geometry);
+      return;
+    }
+
+    // Aquí iría tu lógica para añadir la capa
+  };
+
+
+  const handleToggleAllPolygons = () => {
+    console.log("🟢 Click en mostrar todas las fincas");
+    setPolygonData(Fincas); // aquí mandas el JSON entero al MapView
+  };
+
+  const handleRemoveAllPolygons = () => {
+    if (!mapRef.current) return;
+    console.log("🔴 Ocultando todos los polígonos");
+
+    // Eliminar capas y fuentes de Mapbox
+    polygonData?.features?.forEach((feature) => {
+      const id = `finca-${feature.properties.id}`;
+      if (mapRef.current.getLayer(id)) mapRef.current.removeLayer(id);
+      if (mapRef.current.getSource(id)) mapRef.current.removeSource(id);
+    });
+
+    // Limpiar estado de React
+    setPolygonData({ type: "FeatureCollection", features: [] });
+  };
+
+  // Renderizar polígonos cuando cambie polygonData
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (!polygonData?.features) return;
+
+    polygonData.features.forEach((feature) => {
+      const id = `finca-${feature.properties.id}`;
+
+      // Evitar crear duplicados
+      if (mapRef.current.getLayer(id)) return;
+
+      mapRef.current.addSource(id, { type: "geojson", data: feature });
+      mapRef.current.addLayer({
+        id,
+        type: "fill",
+        source: id,
+        paint: { "fill-color": "#088", "fill-opacity": 0.4 },
+      });
+    });
+  }, [polygonData]);
   return (
     <>
       <div
@@ -726,53 +775,36 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
         )}
       </div>*/}
 
-        {/* Sección de Coordenadas */}
+        {/* Sección de Fincas */}
         <div className="sidebar-section">
           <div className="section-header" onClick={() => toggleSection('fincas')}>
             <FaMap className="section-icon" />
             <span>Fincas</span>
             <FaChevronDown className={`chevron ${expandedSection === 'fincas' ? 'expanded' : ''}`} />
           </div>
+
           {expandedSection === 'fincas' && (
             <div className="section-content">
-              {Fincas.map((finca) => {
-                // Generar un ID único para cada finca (usando el nombre en formato camelCase)
-                const fincaId = finca.nombre.toLowerCase().replace(/\s+/g, '');
-                const iconColor = getColorForFinca(Fincas.indexOf(finca));
+              {/* Aquí quitamos el .map que repetía cada finca */}
 
-                return (
-                  <div key={fincaId} className="finca-item">
-                    <div className="finca-header" onClick={() => toggleFinca(fincaId)}>
-                      <FaTree className="finca-icon" style={{ color: iconColor }} />
-                      <span>{finca.nombre}</span>
-                      <FaChevronDown className={`chevron ${expandedFinca === fincaId ? 'expanded' : ''}`} />
-                    </div>
-                    {expandedFinca === fincaId && (
-                      <div className="finca-details">
-                        <div className="finca-info">
-                          {finca.area && <p><FaRulerCombined /> <strong>Área:</strong> {finca.area}</p>}
-                          {finca.cultivo && <p><FaSeedling /> <strong>Cultivo:</strong> {finca.cultivo}</p>}
-                          {finca.ubicacion && <p><FaMapMarkerAlt /> <strong>Ubicación:</strong> {finca.ubicacion}</p>}
-                          {finca.maquinaria && <p><FaTractor /> <strong>Maquinaria:</strong> {finca.maquinaria}</p>}
-                          {finca.riego && <p><FaWater /> <strong>Riego:</strong> {finca.riego}</p>}
-                          {finca.exposicion && <p><FaSun /> <strong>Exposición:</strong> {finca.exposicion}</p>}
-                        </div>
-                        <button
-                          className="show-polygon-btn"
-                          onClick={() => handleShowPolygon(finca)}
-                        >
-                          <FaDrawPolygon /> Mostrar polígono
-                        </button>
-                        <button onClick={handleRemovePolygon}>Ocultar Polígono</button>
-
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Botones globales para todos los polígonos */}
+              <button
+                className="show-polygon-btn"
+                onClick={() => {
+                  console.log("🟢 Click detectado en botón");
+                  handleToggleAllPolygons();
+                }}
+              >
+                <FaDrawPolygon /> Mostrar polígonos
+              </button>
+              <button onClick={handleRemoveAllPolygons}>
+                Ocultar polígonos
+              </button>
             </div>
           )}
         </div>
+
+
 
       </div>
       <div className="mobile-sidebar-container">
@@ -906,46 +938,28 @@ const SidebarMapas = ({ setPolygonData, collapsed, setCollapsed, onFilterChange,
                 ))}
                 {mobileActiveTab === 'fincas' && (
                   <div className="mobile-fincas-content">
-                    {Fincas.map((finca) => {
-                      const fincaId = finca.nombre.toLowerCase().replace(/\s+/g, '');
-                      const iconColor = getColorForFinca(Fincas.indexOf(finca));
+                    {/* Botones globales para todos los polígonos */}
+                    <button
+                      className="mobile-show-polygon-btn"
+                      onClick={() => {
+                        console.log("🟢 Click detectado en botón móvil: mostrar polígonos");
+                        handleToggleAllPolygons(); // igual que en PC
+                      }}
+                    >
+                      <FaDrawPolygon /> Mostrar polígonos
+                    </button>
 
-                      return (
-                        <div key={fincaId} className="mobile-finca-item">
-                          <div
-                            className="mobile-finca-header"
-                            onClick={() => toggleFinca(fincaId)}
-                          >
-                            <FaTree className="mobile-finca-icon" style={{ color: iconColor }} />
-                            <span>{finca.nombre}</span>
-                            <FaChevronDown className={`mobile-chevron ${expandedFinca === fincaId ? 'expanded' : ''}`} />
-                          </div>
-
-                          {expandedFinca === fincaId && (
-                            <div className="mobile-finca-details">
-                              <div className="mobile-finca-info">
-                                {finca.area && <p><FaRulerCombined /> <strong>Área:</strong> {finca.area}</p>}
-                                {finca.cultivo && <p><FaSeedling /> <strong>Cultivo:</strong> {finca.cultivo}</p>}
-                                {finca.ubicacion && <p><FaMapMarkerAlt /> <strong>Ubicación:</strong> {finca.ubicacion}</p>}
-                                {finca.maquinaria && <p><FaTractor /> <strong>Maquinaria:</strong> {finca.maquinaria}</p>}
-                                {finca.riego && <p><FaWater /> <strong>Riego:</strong> {finca.riego}</p>}
-                                {finca.exposicion && <p><FaSun /> <strong>Exposición:</strong> {finca.exposicion}</p>}
-                              </div>
-                              <button
-                                className="mobile-show-polygon-btn"
-                                onClick={() => handleShowPolygon(finca)}
-                              >
-                                <FaDrawPolygon /> Mostrar polígono
-                              </button>
-                              <button onClick={removePolygonFromMap}>Ocultar Polígono</button>
-
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                    <button
+                      onClick={() => {
+                        console.log("🔴 Click detectado en botón móvil: ocultar polígonos");
+                        handleRemoveAllPolygons(); // igual que en PC
+                      }}
+                    >
+                      Ocultar polígonos
+                    </button>
                   </div>
                 )}
+
                 {mobileActiveTab === 'calor' && (
                   <div className="mobile-heatmap-content">
                     <div className="heatmap-controls">

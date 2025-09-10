@@ -354,8 +354,8 @@ const LemonStatsDashboard = () => {
     <div className="lemon-stats-dashboard">
       <header className="dashboard-header">
         <div className="header-content">
-          <h1><i className="fas fa-lemon"></i> Panel de Control de Plagas - Cultivo de Limón</h1>
-          <p>Monitoreo y análisis de plagas en tiempo real</p>
+          <h1><i className="fas fa-lemon"></i> Panel de estadísticas - Cultivo de Limón</h1>
+
         </div>
         <div className="header-actions">
           <button className="btn btn-primary">

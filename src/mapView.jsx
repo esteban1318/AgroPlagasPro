@@ -1049,6 +1049,8 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       console.error("Error guardando viewport:", error);
     }
   }, [viewport]);
+
+
   return (
 
     <>
@@ -1187,23 +1189,24 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
             </Popup>
           )}
 
-          {polygonData && (
-            <Source
-              id="polygon-source"
-              type="geojson"
-              data={{
-                type: 'Feature',
-                geometry: {
-                  type: 'Polygon',
-                  coordinates: [polygonData.coordinates] // Asegúrate que coordinates es un array de [lng, lat]
-                },
-                properties: {}
+          {/* pinta las fincas */}
+          <Source
+            id="fincas"   // este id NO debe cambiar nunca
+            type="geojson"
+            data={polygonData}  // aquí sí puede cambiar el contenido
+          >
+            <Layer
+              id="fincas-line"
+              type="line"
+              paint={{
+                "line-color": "#FF0000",
+                "line-width": 2
               }}
-            >
-              <Layer {...polygonLayer} />
-              <Layer {...polygonOutlineLayer} />
-            </Source>
-          )}
+            />
+          </Source>
+
+
+
 
         </Map>
         <div className="controls-container">

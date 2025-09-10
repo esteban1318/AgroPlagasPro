@@ -75,6 +75,7 @@ const AppContent = () => {
           setPolygonData={setPolygonData}
           dateRange={dateRange}       // ✅ ahora existe
           setDateRange={setDateRange} // ✅ ahora existe
+          polygonData={polygonData}
         />
       )}
 

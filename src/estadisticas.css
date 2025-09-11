@@ -119,13 +119,14 @@
 
 .filters-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
 }
 
 .filter-group {
     display: flex;
     flex-direction: column;
+
 }
 
 .filter-group label {
@@ -141,6 +142,10 @@
     border-radius: 6px;
     font-size: 1rem;
     background: white;
+    width: 100%;
+    /* que ocupe todo el ancho disponible del grid */
+    box-sizing: border-box;
+    /* para que padding no aumente el ancho */
 }
 
 .filter-group input:focus,
@@ -154,6 +159,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
+    /* que los inputs se muevan a la siguiente línea si no hay espacio */
 }
 
 .date-inputs span {

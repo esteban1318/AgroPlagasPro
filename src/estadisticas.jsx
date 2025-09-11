@@ -13,7 +13,7 @@ import {
   Legend
 } from 'chart.js';
 import './estadisticas.css';
-
+import { getFilteredRecords } from './indexedDB';
 // Registrar componentes de Chart.js
 ChartJS.register(
   CategoryScale,
@@ -135,17 +135,14 @@ const LemonStatsDashboard = () => {
 
   const [pestData, setPestData] = useState(initialPestData);
   const [filteredData, setFilteredData] = useState(initialPestData);
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  });
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [selectedPestType, setSelectedPestType] = useState("Todos");
   const [selectedLocation, setSelectedLocation] = useState("Todos");
   const [selectedFinca, setSelectedFinca] = useState(fincasImagenes[0]);
   const [drawingMode, setDrawingMode] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const canvasRef = useRef(null);
-
+  const [records, setRecords] = useState([]);
   // Efecto para aplicar filtros
   useEffect(() => {
     let result = [...pestData];
@@ -227,28 +224,16 @@ const LemonStatsDashboard = () => {
 
   // Calcular estadísticas
   const totalPests = filteredData.reduce((sum, item) => sum + item.count, 0);
-  const mostCommonPest = filteredData.length > 0
-    ? [...filteredData].sort((a, b) => b.count - a.count)[0].type
-    : "N/A";
-
-  const averageSeverity = filteredData.length > 0
-    ? (filteredData.filter(item => item.severity === "Alta").length / filteredData.length * 100).toFixed(2)
-    : "0";
-
-  const affectedLocations = [...new Set(filteredData.map(item => item.location))].length;
-
-  // Preparar datos para gráficos
-  const dates = [...new Set(filteredData.map(item => item.date))].sort();
-
+  const dates = [...new Set(records.map(item => item.fecha))].sort();
   const lineChartData = {
     labels: dates,
     datasets: [
       {
         label: 'Detecciones por día',
         data: dates.map(date =>
-          filteredData
-            .filter(item => item.date === date)
-            .reduce((sum, item) => sum + item.count, 0)
+          records
+            .filter(item => item.fecha === date)
+            .reduce((sum, item) => sum + item.marcado, 0) // o item.count si usas count
         ),
         borderColor: 'rgb(46, 204, 113)',
         backgroundColor: 'rgba(46, 204, 113, 0.2)',
@@ -259,15 +244,18 @@ const LemonStatsDashboard = () => {
   };
 
   // Preparar datos para el gráfico de plagas más comunes (top 7)
-  const pestCounts = pestTypes.map(type => ({
-    type,
-    count: filteredData
-      .filter(item => item.type === type)
-      .reduce((sum, item) => sum + item.count, 0)
-  })).sort((a, b) => b.count - a.count).slice(0, 7);
+  const pestCounts = Object.values(
+    records.reduce((acc, r) => {
+      if (!acc[r.plaga_id]) acc[r.plaga_id] = { id: r.plaga_id, count: 0 };
+      acc[r.plaga_id].count += 1; // o acc[r.plaga_id].count += r.marcado si quieres sumar cantidad
+      return acc;
+    }, {})
+  );
+  // Ordenar de mayor a menor
+  pestCounts.sort((a, b) => b.count - a.count);
 
   const barChartData = {
-    labels: pestCounts.map(p => p.type),
+    labels: pestCounts.map(p => p.id),
     datasets: [
       {
         label: 'Total por tipo de plaga',
@@ -349,6 +337,71 @@ const LemonStatsDashboard = () => {
       }
     }
   };
+  // Cuando cambien los filtros, recargar los datos
+  useEffect(() => {
+    getFilteredRecords({
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+      pestType: selectedPestType,
+      location: selectedLocation
+    })
+      .then(setRecords)
+      .catch(console.error);
+  }, [dateRange, selectedPestType, selectedLocation]);
+  // Resumen
+  const total = records.length;
+  const byPlaga = records.reduce((acc, r) => {
+    acc[r.plaga_id] = (acc[r.plaga_id] || 0) + 1;
+    return acc;
+  }, {});
+  const byZona = records.reduce((acc, r) => {
+    acc[r.zona] = (acc[r.zona] || 0) + 1;
+    return acc;
+  }, {});
+
+
+  // Número de detecciones de la plaga más común
+
+  // Severidad alta
+  const highSeverityCount = records.filter(r => r.severity === "Alta").length;
+  const averageSeverity = total > 0 ? ((highSeverityCount / total) * 100).toFixed(2) : 0;
+
+  // Ubicaciones afectadas
+  const affectedLocations = [...new Set(records.map(r => r.zona))].length;
+  const { mostCommonPest, mostCommonCount, mostCommonPestId } = useMemo(() => {
+    if (!records || records.length === 0) {
+      return { mostCommonPest: "Ninguno", mostCommonCount: 0, mostCommonPestId: null };
+    }
+
+    // Filtrar registros con plaga_id real
+    const realRecords = records.filter(r => r.plaga_id && r.plaga_id !== "NINGUNO");
+
+    if (realRecords.length === 0) {
+      return { mostCommonPest: "Ninguno", mostCommonCount: 0, mostCommonPestId: null };
+    }
+
+    // Contar cantidad de cada plaga
+    const pestCounts = Object.values(
+      realRecords.reduce((acc, r) => {
+        if (!acc[r.plaga_id]) acc[r.plaga_id] = { id: r.plaga_id, count: 0 };
+        acc[r.plaga_id].count += 1;
+        return acc;
+      }, {})
+    );
+
+    // Ordenar de mayor a menor
+    pestCounts.sort((a, b) => b.count - a.count);
+
+    const mostCommonPestId = pestCounts[0]?.id ?? null;
+
+    const mostCommonPest = mostCommonPestId
+      ? plagas.find(p => p.id === mostCommonPestId)?.nombre ?? mostCommonPestId
+      : "Ninguno";
+
+    const mostCommonCount = pestCounts[0]?.count ?? 0;
+
+    return { mostCommonPest, mostCommonCount, mostCommonPestId };
+  }, [records, plagas]);
 
   return (
     <div className="lemon-stats-dashboard">
@@ -387,7 +440,7 @@ const LemonStatsDashboard = () => {
 
           <div className="filter-group">
             <label>Tipo de Plaga:</label>
-            <select
+            <select className='select-plagas'
               value={selectedPestType}
               onChange={e => setSelectedPestType(e.target.value)}
             >
@@ -449,7 +502,7 @@ const LemonStatsDashboard = () => {
             </div>
             <div className="stat-content">
               <h3>Total de Plagas Detectadas</h3>
-              <p className="stat-number">{totalPests}</p>
+              <p className="stat-number">{total}</p>
               <p className="stat-trend">
                 <i className="fas fa-arrow-up"></i> 12% vs período anterior
               </p>
@@ -464,9 +517,10 @@ const LemonStatsDashboard = () => {
               <h3>Plaga Más Común</h3>
               <p className="stat-text">{mostCommonPest}</p>
               <p className="stat-subtext">
-                {filteredData.filter(item => item.type === mostCommonPest).length} detecciones
+                {mostCommonCount} detecciones
               </p>
             </div>
+
           </div>
 
           <div className="stat-card card">

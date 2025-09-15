@@ -153,7 +153,6 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
   };
   //funcion que se ejecuta cuando haces clic en una plaga.
   const togglePlagaSelection = (plaga) => {
-    console.log("plaga selecionada", plaga.id)
     const isSelected = selectedPlagas.includes(plaga.id);
 
     // Ejemplo: Filtrar coordenadas para la plaga seleccionada
@@ -288,13 +287,9 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
 
 
   const mapRef = useRef(); // Esto debe estar al principio del componente
-  const handleRemovePolygon = () => {
-    console.log('🧽 Eliminando polígono (vía React)');
-    setPolygonData(null); // ✅ esto limpia el polígono del mapa
-  };
+
 
   const removePolygonFromMap = () => {
-    console.log('🧽 Eliminando polígono (vía React)');
     setPolygonData(null); // ✅ esto limpia el polígono del mapa
   };
 
@@ -398,8 +393,8 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
     return Number.isNaN(d.getTime()) ? NaN : d.getTime();
   };
 
-  console.log("Todas las plagas con fechas normalizadas:");
-  plagas.forEach(p => console.log(p.fecha, getPlagaTime(p.fecha)));
+
+  /*plagas.forEach(p => console.log(p.fecha, getPlagaTime(p.fecha)));*/
 
   // --- Aplica el filtro de fechas al hacer click en el botón ---
   async function aplicarFiltros() {
@@ -419,7 +414,7 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
       return fecha >= startDate && fecha <= endDate;
     });
 
-    console.log("✅ Plagas filtradas:", filtrados);
+
     setDatosFiltrados(filtrados);
   }
 
@@ -429,7 +424,6 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
       upgrade(db) {
         if (!db.objectStoreNames.contains("plagas")) {
           db.createObjectStore("plagas", { keyPath: "id", autoIncrement: true });
-          console.log('Store "plagas" creada');
         }
       }
     });
@@ -460,7 +454,7 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
     if (dateRange.start && dateRange.end) {
       getPlagasByDateRange(dateRange.start, dateRange.end)
         .then((res) => {
-          console.log("✅ Plagas filtradas por rango:", res);
+
           setPlagasFiltradas(res);
         })
         .catch((err) => console.error("Error consultando IndexedDB:", err));
@@ -471,8 +465,6 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
 
 
   const handleShowPolygon = (feature) => {
-    console.log("📍 handleShowPolygon recibió:", feature);
-
     if (!feature) {
       console.error("❌ Feature es undefined");
       return;
@@ -481,7 +473,7 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
     if (!mapRef.current) return;
 
     const id = `finca-${feature.properties?.id}`;
-    console.log("🆔 ID capa:", id);
+
 
     // Verifica coordenadas
     if (!feature.geometry?.coordinates) {
@@ -494,13 +486,12 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
 
 
   const handleToggleAllPolygons = () => {
-    console.log("🟢 Click en mostrar todas las fincas");
     setPolygonData(Fincas); // aquí mandas el JSON entero al MapView
   };
 
   const handleRemoveAllPolygons = () => {
     if (!mapRef.current) return;
-    console.log("🔴 Ocultando todos los polígonos");
+
 
     // Eliminar capas y fuentes de Mapbox
     polygonData?.features?.forEach((feature) => {
@@ -724,13 +715,12 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
               <button
                 className="show-polygon-btn"
                 onClick={() => {
-                  console.log("🟢 Click detectado en botón");
                   handleToggleAllPolygons();
                 }}
               >
                 <FaDrawPolygon /> Mostrar polígonos
               </button>
-              <button onClick={handleRemoveAllPolygons}>
+              <button onClick={removePolygonFromMap}>
                 Ocultar polígonos
               </button>
             </div>
@@ -741,7 +731,7 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
 
       </div>
       <div className="mobile-sidebar-container">
-        {console.log('renderizando boton flotante')}
+
         {/* Botón flotante para abrir sidebar en móvil */}
         <button
           className="mobile-sidebar-toggle-button"
@@ -875,7 +865,7 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
                     <button
                       className="mobile-show-polygon-btn"
                       onClick={() => {
-                        console.log("🟢 Click detectado en botón móvil: mostrar polígonos");
+
                         handleToggleAllPolygons(); // igual que en PC
                       }}
                     >
@@ -884,7 +874,6 @@ const SidebarMapas = ({ polygonData, setPolygonData, collapsed, setCollapsed, on
 
                     <button
                       onClick={() => {
-                        console.log("🔴 Click detectado en botón móvil: ocultar polígonos");
                         handleRemoveAllPolygons(); // igual que en PC
                       }}
                     >

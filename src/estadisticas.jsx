@@ -224,24 +224,129 @@ const LemonStatsDashboard = () => {
 
   // Calcular estadísticas
   const totalPests = filteredData.reduce((sum, item) => sum + item.count, 0);
-  const dates = [...new Set(records.map(item => item.fecha))].sort();
+  // Función para formatear según agrupación
+
+
+  // Agrupar por mes (clave YYYY-MM) convirtiendo marcado a número de forma segura
+  const deteccionesPorMesObj = useMemo(() => {
+    const acc = {};
+
+    records.forEach(item => {
+      if (!item || !item.fecha) return;
+
+      // 1) convertir marcado a número seguro (quita comas, trim, etc.)
+      const marcadoRaw = item.marcado ?? item.count ?? 0; // intenta varias propiedades si existen
+      const marcado = Number(String(marcadoRaw).replace(/[, ]+/g, "").trim()) || 0;
+
+      // 2) obtener clave YYYY-MM de manera robusta (soporta "YYYY-MM-DD" y fechas parseables)
+      let yearMonth;
+      const parts = String(item.fecha).split("-");
+      if (parts.length >= 2 && /^\d{4}$/.test(parts[0])) {
+        // formato esperado YYYY-MM(-DD)
+        const year = parts[0];
+        const month = parts[1].padStart(2, "0");
+        yearMonth = `${year}-${month}`;
+      } else {
+        // fallback: intentar con Date
+        const d = new Date(item.fecha);
+        if (isNaN(d)) return; // no se puede parsear, lo ignoramos
+        yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      acc[yearMonth] = (acc[yearMonth] || 0) + marcado;
+    });
+
+    return acc;
+  }, [records]);
+
+  // Ordenar claves (YYYY-MM) y crear etiquetas legibles en español
+  const monthKeys = Object.keys(deteccionesPorMesObj).sort(); // "2024-09", "2025-02", ...
+  const monthLabels = monthKeys.map(k => {
+    const [y, m] = k.split("-");
+    const d = new Date(Number(y), Number(m) - 1, 1);
+    // "Febrero 2025" (primera letra mayúscula)
+    const label = d.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  });
+  const monthData = monthKeys.map(k => deteccionesPorMesObj[k]);
+
+  // Chart.js data
+  const [agrupacion, setAgrupacion] = useState("mes"); // "dia" | "mes" | "anio"
+
+  // --- Agrupar detecciones según agrupación seleccionada ---
+  const agrupados = useMemo(() => {
+    const acc = {};
+
+    records.forEach((item) => {
+      if (!item || !item.fecha) return;
+
+      // Normalizar marcado a número
+      const marcadoRaw = item.marcado ?? item.count ?? 0;
+      const marcado = Number(String(marcadoRaw).replace(/[, ]+/g, "").trim()) || 0;
+
+      const d = new Date(item.fecha);
+      if (isNaN(d)) return;
+
+      let clave = "";
+      if (agrupacion === "dia") {
+        clave = d.toISOString().slice(0, 10); // YYYY-MM-DD
+      } else if (agrupacion === "mes") {
+        clave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; // YYYY-MM
+      } else if (agrupacion === "anio") {
+        clave = `${d.getFullYear()}`; // YYYY
+      }
+
+      acc[clave] = (acc[clave] || 0) + marcado;
+    });
+
+    return acc;
+  }, [records, agrupacion]);
+
+  // --- Ordenar claves ---
+  const clavesOrdenadas = Object.keys(agrupados).sort();
+
+  // --- Crear etiquetas legibles ---
+  const etiquetas = clavesOrdenadas.map((k) => {
+    if (agrupacion === "dia") {
+      const d = new Date(k);
+      return d.toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } else if (agrupacion === "mes") {
+      const [y, m] = k.split("-");
+      const d = new Date(Number(y), Number(m) - 1, 1);
+      return d.toLocaleDateString("es-ES", {
+        month: "long",
+        year: "numeric",
+      });
+    } else {
+      return k; // año simple
+    }
+  });
+
+  // --- Datos para Chart.js ---
   const lineChartData = {
-    labels: dates,
+    labels: etiquetas,
     datasets: [
       {
-        label: 'Detecciones por día',
-        data: dates.map(date =>
-          records
-            .filter(item => item.fecha === date)
-            .reduce((sum, item) => sum + item.marcado, 0) // o item.count si usas count
-        ),
-        borderColor: 'rgb(46, 204, 113)',
-        backgroundColor: 'rgba(46, 204, 113, 0.2)',
+        label:
+          agrupacion === "dia"
+            ? "Detecciones por día"
+            : agrupacion === "mes"
+              ? "Detecciones por mes"
+              : "Detecciones por año",
+        data: clavesOrdenadas.map((k) => agrupados[k]),
+        borderColor: "rgb(46, 204, 113)",
+        backgroundColor: "rgba(46, 204, 113, 0.2)",
         tension: 0.1,
-        fill: true
-      }
-    ]
+        fill: true,
+      },
+    ],
   };
+
+
 
   // Preparar datos para el gráfico de plagas más comunes (top 7)
   const pestCounts = Object.values(
@@ -402,6 +507,71 @@ const LemonStatsDashboard = () => {
 
     return { mostCommonPest, mostCommonCount, mostCommonPestId };
   }, [records, plagas]);
+  //
+  // Filtrar datos según plaga seleccionada
+  const filteredRecords = useMemo(() => {
+    if (selectedPestType === "Todos") return records;
+    return records.filter(r => r.plaga_id === selectedPestType);
+  }, [selectedPestType, records]);
+
+  // Calcular métricas
+  const totalDetecciones = filteredRecords.length;
+  const plagaMasComun = (() => {
+    const counts = {};
+    filteredRecords.forEach(r => {
+      if (r.plaga_id !== "NINGUNO") {
+        counts[r.plaga_id] = (counts[r.plaga_id] || 0) + 1;
+      }
+    });
+    const [plaga, count] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || ["-", 0];
+    return { plaga, count };
+  })();
+  const ubicacionesAfectadas = new Set(filteredRecords.map(r => r.lote_id)).size;
+  // Finca más afectada
+  // Agrupamos por finca (ej: lote_id)
+  // Agrupamos por finca (cod_moni_id)
+  const farmCounts = {};
+  filteredRecords.forEach(r => {
+    const farm = r.cod_moni_id || "Desconocido"; // usamos el nombre real de la finca
+    farmCounts[farm] = (farmCounts[farm] || 0) + 1;
+  });
+
+  // Encontrar la finca con más detecciones
+  let mostAffectedFarm = null;
+  let mostAffectedCount = 0;
+  for (const farm in farmCounts) {
+    if (farmCounts[farm] > mostAffectedCount) {
+      mostAffectedFarm = farm;
+      mostAffectedCount = farmCounts[farm];
+    }
+  }
+  // agrupamos por lote y finca
+  const lotesCounts = {};
+  filteredRecords.forEach(r => {
+    const lote = r.lote_id || "Sin lote";
+    const finca = r.cod_moni_id || "Sin finca";
+    const key = `${lote}|${finca}`;
+    lotesCounts[key] = (lotesCounts[key] || 0) + 1;
+  });
+
+  // inicializamos valores seguros
+  let mostAffectedKey = null;
+  let mostAffectedLoteCount = 0;
+
+  for (const key in lotesCounts) {
+    if (lotesCounts[key] > mostAffectedLoteCount) {
+      mostAffectedKey = key;
+      mostAffectedLoteCount = lotesCounts[key];
+    }
+  }
+
+  let mostAffectedLote = "N/A";
+  let mostAffectedFinca = "N/A";
+
+  if (mostAffectedKey) {
+    [mostAffectedLote, mostAffectedFinca] = mostAffectedKey.split("|");
+  }
+
 
   return (
     <div className="lemon-stats-dashboard">
@@ -440,16 +610,20 @@ const LemonStatsDashboard = () => {
 
           <div className="filter-group">
             <label>Tipo de Plaga:</label>
-            <select className='select-plagas'
+            <select
+              className="select-plagas"
               value={selectedPestType}
               onChange={e => setSelectedPestType(e.target.value)}
             >
               <option value="Todos">Todas las plagas</option>
-              {pestTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
+              {plagas.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
               ))}
             </select>
           </div>
+
 
           <div className="filter-group">
             <label>Ubicación:</label>
@@ -501,7 +675,7 @@ const LemonStatsDashboard = () => {
               <i className="fas fa-bug"></i>
             </div>
             <div className="stat-content">
-              <h3>Total de Plagas Detectadas</h3>
+              <h3>Total de detecciones geográficas</h3>
               <p className="stat-number">{total}</p>
               <p className="stat-trend">
                 <i className="fas fa-arrow-up"></i> 12% vs período anterior
@@ -525,118 +699,60 @@ const LemonStatsDashboard = () => {
 
           <div className="stat-card card">
             <div className="stat-icon severity">
-              <i className="fas fa-skull-crossbones"></i>
+              <i className="fas fa-tractor"></i>
             </div>
             <div className="stat-content">
-              <h3>Severidad Alta</h3>
-              <p className="stat-number">{averageSeverity}%</p>
-              <p className="stat-subtext">de las detecciones</p>
+              <h3>Finca Más Afectada</h3>
+              <p className="stat-text">{mostAffectedFarm || "N/A"}</p>
+              <p className="stat-subtext">
+                {mostAffectedCount} detecciones
+              </p>
             </div>
           </div>
+
 
           <div className="stat-card card">
-            <div className="stat-icon trend">
-              <i className="fas fa-map-marked-alt"></i>
+            <div className="stat-icon location">
+              <i className="fas fa-map-marker-alt"></i>
             </div>
             <div className="stat-content">
-              <h3>Ubicaciones Afectadas</h3>
-              <p className="stat-number">{affectedLocations}</p>
-              <p className="stat-subtext">de {ubicaciones.length} totales</p>
+              <h3>Lote Más Afectado</h3>
+              <p className="stat-text">
+                {mostAffectedLote} ({mostAffectedFinca})
+              </p>
+              <p className="stat-subtext">
+                {mostAffectedLoteCount} de {total} detecciones totales
+              </p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Visualización de Fincas con Drone */}
-      <div className="fincas-section card">
-        <h2><i className="fas fa-drone"></i> Visualización de Fincas con Drone</h2>
-        <div className="fincas-controls">
-          <div className="finca-selector">
-            <label>Seleccionar Finca:</label>
-            <select
-              value={selectedFinca.id}
-              onChange={e => setSelectedFinca(fincasImagenes.find(f => f.id === parseInt(e.target.value)))}
-            >
-              {fincasImagenes.map(finca => (
-                <option key={finca.id} value={finca.id}>{finca.nombre}</option>
-              ))}
-            </select>
-          </div>
-          <div className="visualization-controls">
-            <button
-              className={`btn ${showHeatmap ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setShowHeatmap(!showHeatmap)}
-            >
-              <i className="fas fa-fire"></i> {showHeatmap ? 'Ocultar' : 'Mostrar'} Mapa de Calor
-            </button>
-            <button
-              className="btn btn-outline"
-              onClick={() => setDrawingMode(!drawingMode)}
-            >
-              <i className="fas fa-pencil-alt"></i> {drawingMode ? 'Desactivar' : 'Activar'} Dibujo
-            </button>
-          </div>
-        </div>
-        <div className="finca-visualization">
-          <div className="image-container">
-            <img src={selectedFinca.url} alt={selectedFinca.nombre} className="finca-image" />
-            <canvas
-              ref={canvasRef}
-              className="heatmap-canvas"
-              style={{ display: showHeatmap ? 'block' : 'none' }}
-            />
-            {drawingMode && (
-              <div className="drawing-tools">
-                <button className="btn btn-sm">
-                  <i className="fas fa-dot-circle"></i> Marcar Zona
-                </button>
-                <button className="btn btn-sm">
-                  <i className="fas fa-vector-square"></i> Delimitar Área
-                </button>
-                <button className="btn btn-sm">
-                  <i className="fas fa-sticky-note"></i> Agregar Nota
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="finca-info">
-            <h3>{selectedFinca.nombre}</h3>
-            <div className="finca-stats">
-              <div className="finca-stat">
-                <span className="stat-label">Plagas Detectadas:</span>
-                <span className="stat-value">
-                  {filteredData.filter(d => d.locationId === selectedFinca.id.toString().slice(-1)).length}
-                </span>
-              </div>
-              <div className="finca-stat">
-                <span className="stat-label">Nivel de Infestación:</span>
-                <span className="stat-value">Moderado</span>
-              </div>
-              <div className="finca-stat">
-                <span className="stat-label">Última Inspección:</span>
-                <span className="stat-value">2023-10-15</span>
-              </div>
-            </div>
-            <div className="finca-actions">
-              <button className="btn btn-outline">
-                <i className="fas fa-camera"></i> Nueva Imagen
-              </button>
-              <button className="btn btn-outline">
-                <i className="fas fa-share-alt"></i> Compartir
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Gráficos */}
+      <div className="chart-wrapper card">
+        <h3>Evolución Temporal de Detecciones</h3>
+
+        {/* Selector de agrupación */}
+
+        <div className="selector-container">
+          <label htmlFor="agrupacion">Ver por:</label>
+          <select
+            id="agrupacion"
+            value={agrupacion}
+            onChange={(e) => setAgrupacion(e.target.value)}
+          >
+            <option value="dia">Día</option>
+            <option value="mes">Mes</option>
+            <option value="anio">Año</option>
+          </select>
+        </div>
+
+        <Line data={lineChartData} />
+      </div>
       <div className="charts-section">
         <h2><i className="fas fa-chart-area"></i> Visualización de Datos</h2>
         <div className="charts-container">
-          <div className="chart-wrapper card">
-            <h3>Evolución Temporal de Detecciones</h3>
-            <Line data={lineChartData} options={chartOptions} />
-          </div>
 
           <div className="chart-wrapper card">
             <h3>Plagas Más Comunes (Top 7)</h3>
@@ -693,7 +809,7 @@ const LemonStatsDashboard = () => {
           </table>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

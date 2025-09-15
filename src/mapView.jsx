@@ -21,23 +21,6 @@ import btnLlamarEstadisticas from './iconos/btn-abrir-Est-rapidas.png';
 
 //import DbConnectionForm from './DbConnectionForm';
 
-// Helper para comprimir/descomprimir datos en localStorage
-const compressData = (data) => {
-  try {
-    const json = JSON.stringify(data);
-    const compressed = pako.gzip(json);
-    const chunkSize = 0x8000;
-    let str = '';
-    for (let i = 0; i < compressed.length; i += chunkSize) {
-      const slice = compressed.subarray(i, i + chunkSize);
-      str += String.fromCharCode.apply(null, slice);
-    }
-    return btoa(str);
-  } catch (error) {
-    console.error('Error compressing data:', error);
-    return null;
-  }
-};
 
 const decompressData = (compressed) => {
   try {
@@ -73,30 +56,11 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
   const { selectedPlagas } = useContext(PestFilterContext);
   const location = useLocation();
 
-  const savedFeaturesCompressed = localStorage.getItem('uploadedFeatures');
+
   // === Antes de los useState ===
   let initialFeatures = [];
   // 1) Raw puro
-  const raw = localStorage.getItem('uploadedFeaturesRaw');
-  if (raw) {
-    try {
-      initialFeatures = JSON.parse(raw);
-    } catch {
-      initialFeatures = [];
-    }
-  } else {
-    // 2) Sino, intenta descomprimir el comprimido
-    const comp = localStorage.getItem('uploadedFeatures');
-    if (comp) {
-      try {
-        initialFeatures = decompressData(comp) || [];
-      } catch {
-        initialFeatures = [];
-      }
-    }
-    // 3) Guarda el raw para usos futuros
-    localStorage.setItem('uploadedFeaturesRaw', JSON.stringify(initialFeatures));
-  }
+
 
   const { setSelectedPest, selectedPest } = useContext(PestFilterContext);
 
@@ -134,8 +98,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
   const { drawCoords, setDrawCoords } = useMapStore();
   const [mostrarHeatmap, setMostrarHeatmap] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    const savedSidebarState = localStorage.getItem("sidebarOpen");
-    return savedSidebarState !== null ? JSON.parse(savedSidebarState) : true; // true = abierto por defecto
+    // true = abierto por defecto
   });
   const [filteredData, setFilteredData] = useState([]);
   const [features, setFeatures] = useState([]);
@@ -179,7 +142,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       });
     }
   }, [displayedFeatures]);
-  //guardar en localstore
+
 
   // ✅ Solo guarda estilo y zoom
   useEffect(() => {
@@ -188,10 +151,8 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     }
   }, [mapStyle]);
 
-  // Efecto para guardar el estado cada vez que cambie
-  useEffect(() => {
-    localStorage.setItem("sidebarOpen", JSON.stringify(isSidebarOpen));
-  }, [isSidebarOpen]);
+
+
 
   useEffect(() => {
     const supercluster = new Supercluster({
@@ -305,11 +266,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  useEffect(() => {
-    const storedFeatures = JSON.parse(localStorage.getItem('features') || '[]');
-    const plagaIds = [...new Set(storedFeatures.map(f => f?.properties?.plaga_id))];
-    console.log('🪲 Plaga IDs guardados en localStorage:', plagaIds);
-  }, []);
+
 
 
   useEffect(() => {
@@ -607,9 +564,6 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
           };
         }).filter(Boolean);
 
-      console.log("Datos a guardar en localStorage:", optimizedFeatures);
-      console.log('📦 GeoJSON recibido:', geojson);
-      console.log('✅ Features optimizadas:', optimizedFeatures);
 
       // Extraer IDs de plaga
       const plagaIDs = optimizedFeatures
@@ -1050,6 +1004,8 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     }
   }, [viewport]);
 
+  //
+
 
   return (
 
@@ -1204,6 +1160,82 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
               }}
             />
           </Source>
+
+
+          {/* texto de lotes*/}
+          <Source
+            id="finca-label"
+            type="geojson"
+            data={{
+              type: "FeatureCollection",
+              features: [
+
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.889237, 4.239353
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.2 tanque",
+                  },
+                },
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.890574, 4.237823,
+
+
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.3 esquina",
+                  },
+                },
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.887716, 4.234708
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.3 esquina",
+                  },
+                },
+
+              ],
+            }}
+          >
+            <Layer
+              id="finca-text"
+              type="symbol"
+              layout={{
+                "text-field": ["get", "nombre"],
+                "text-size": [
+                  "interpolate", ["linear"], ["zoom"],
+                  10, 12,   // a zoom 10 → 12px
+                  20, 12    // a zoom 20 → sigue 12px
+                ],
+                "text-anchor": "top",
+                "text-allow-overlap": true,       // 🔥 evita que Mapbox esconda o escale textos
+                "icon-allow-overlap": true,       // 🔥 si tuvieras iconos asociados
+                "text-ignore-placement": true     // 🔥 ignora reglas de colisión con otros labels
+              }}
+              paint={{
+                "text-color": "#2E7D32",
+                "text-halo-color": "#fff",
+                "text-halo-width": 2,
+              }}
+            />
+
+          </Source>
+
 
 
 

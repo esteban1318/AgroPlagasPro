@@ -103,17 +103,21 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
   const [filteredData, setFilteredData] = useState([]);
   const [features, setFeatures] = useState([]);
 
+  const [dataFromIndexedDB, setDataFromIndexedDB] = useState([]);
+
   useEffect(() => {
     async function fetchData() {
       try {
         const data = await getCoordenadasFromIndexedDB();
         console.log("Datos de IndexedDB:", data);
+        setDataFromIndexedDB(data); // 👈 guardas en estado
       } catch (error) {
         console.error("Error cargando datos:", error);
       }
     }
     fetchData();
   }, []);
+
 
   //redirigir desde boton con plaga
   /* useEffect(() => {
@@ -432,56 +436,64 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
 
 
 
-  useEffect(() => {
-    async function loadPlagasFromDB() {
-      const data = await getCoordenadasFromIndexedDB();
-
-      // Asegúrate de que mapRef y mapRef.current existan y estén listos
-      const map = mapRef.current;
-      if (!map || !map.addSource) {
-        console.warn('🛑 Mapa aún no está listo');
-        return;
-      }
-
-      if (data.length > 0) {
-        const geojson = {
-          type: 'FeatureCollection',
-          features: data.map((f, index) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [f.x, f.y],
-            },
-            properties: {
-              plaga_id: f.plaga_id,
-              id: index,
-            },
-          })),
-        };
-
-        if (!map.getSource('plagas-source')) {
-          map.addSource('plagas-source', {
-            type: 'geojson',
-            data: geojson,
-          });
-        }
-
-        if (!map.getLayer('plagas-layer-default')) {
-          map.addLayer({
-            id: 'plagas-layer-default',
-            type: 'circle',
-            source: 'plagas-source',
-            paint: {
-              'circle-radius': 4,
-              'circle-color': '#ff0000',
-            },
-          });
-        }
-      }
-    }
-
-    loadPlagasFromDB();
-  }, []);
+  /* useEffect(() => {
+     async function loadPlagasFromDB() {
+       const data = await getCoordenadasFromIndexedDB();
+ 
+       // Asegúrate de que mapRef y mapRef.current existan y estén listos
+       const map = mapRef.current;
+       if (!map || !map.addSource) {
+         console.warn('🛑 Mapa aún no está listo');
+         return;
+       }
+ 
+       if (data.length > 0) {
+         const geojson = {
+           type: 'FeatureCollection',
+           features: data.map((f) => ({
+             type: 'Feature',
+             geometry: {
+               type: 'Point',
+               coordinates: [f.x, f.y],
+             },
+             properties: {
+               id: f.id,
+               plaga_id: f.plaga_id,
+               fecha: f.fecha,
+               lote_id: f.lote_id,
+               empleado_id: f.empleado_id,
+               zona: f.zona,
+               arbol: f.arbol,
+               obs: f.obs,
+               tercio: f.tercio,
+             },
+           })),
+         };
+ 
+ 
+         if (!map.getSource('plagas-source')) {
+           map.addSource('plagas-source', {
+             type: 'geojson',
+             data: geojson,
+           });
+         }
+ 
+         if (!map.getLayer('plagas-layer-default')) {
+           map.addLayer({
+             id: 'plagas-layer-default',
+             type: 'circle',
+             source: 'plagas-source',
+             paint: {
+               'circle-radius': 4,
+               'circle-color': '#ff0000',
+             },
+           });
+         }
+       }
+     }
+ 
+     loadPlagasFromDB();
+   }, []);*/
 
   const handleClearMap = async () => {
     await deleteCoordenadasFromIndexedDB(); // elimina los datos
@@ -1004,8 +1016,61 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     }
   }, [viewport]);
 
-  //
+  //funcion para mostrar etiqueta flotante al pasar sobre el punto
+  // 👉 manejar hover sobre la capa de puntos
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current.getMap();
 
+    // cuando paso el mouse sobre un punto
+    const handleMouseMove = (e) => {
+      if (!e.features?.length) {
+        setSelectedFeature(null);
+        return;
+      }
+      const feature = e.features[0];
+      setSelectedFeature(feature);
+    };
+
+    // cuando salgo del layer
+    const handleMouseLeave = () => {
+      setSelectedFeature(null);
+    };
+
+    map.on("mousemove", "plagas-layer-default", handleMouseMove);
+    map.on("mouseleave", "plagas-layer-default", handleMouseLeave);
+
+    return () => {
+      map.off("mousemove", "plagas-layer-default", handleMouseMove);
+      map.off("mouseleave", "plagas-layer-default", handleMouseLeave);
+    };
+  }, [mapRef]);
+
+  const geojsonFeatures = dataFromIndexedDB.map((item) => ({
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: [item.x, item.y],
+    },
+    properties: {
+      id: item.id,
+      plaga_id: item.plaga_id,
+      fecha: item.fecha,
+      lote_id: item.lote_id,
+      empleado_id: item.empleado_id,
+      zona: item.zona,
+      arbol: item.arbol
+    },
+  }));
+
+  useEffect(() => {
+    if (mapRef.current?.getSource("plagas-source")) {
+      mapRef.current.getSource("plagas-source").setData({
+        type: "FeatureCollection",
+        features: geojsonFeatures,
+      });
+    }
+  }, [geojsonFeatures]);
 
   return (
 
@@ -1070,20 +1135,26 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
             setDibujando(false);
           }}
           onLoad={onLoad}
+          onMouseEnter={() => setSelectedPoint(null)} // Oculta el popup al mover el mouse
+          onMouseLeave={() => setSelectedPoint(null)} // Oculta el popup al mover el mouse
         >
 
-          <Source id='plagas-source' type='geojson' data={{ type: 'FeatureCollection', features: displayedFeatures }}>
+          <Source
+            id='plagas-source'
+            type='geojson'
+            data={{ type: 'FeatureCollection', features: geojsonFeatures }}>
             {/* Capa para puntos no seleccionados */}
             <Layer
               id="plagas-layer-default"
               type="circle"
               filter={['!=', ['get', 'plaga_id'], selectedPlagaId]}
               paint={{
-                'circle-radius': 2,
+                'circle-radius': 3,
                 'circle-color': '#00FF00',
                 'circle-opacity': 0.6
               }}
             />
+
 
             {/* Capa para el punto seleccionado */}
             <Layer
@@ -1132,18 +1203,29 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
           {renderMarkers}
 
           {selectedFeature && (
-            <Popup
-              latitude={selectedFeature.geometry.coordinates[1]}
-              longitude={selectedFeature.geometry.coordinates[0]}
-              onClose={() => setSelectedFeature(null)}
-              closeOnClick={false}
-              anchor="top"
-            >
-              <div>
-                <h4>Punto seleccionado</h4>
-              </div>
-            </Popup>
+            <>
+              {console.log("SelectedFeature:", selectedFeature)}
+              <Popup
+                latitude={selectedFeature.geometry.coordinates[1]}
+                longitude={selectedFeature.geometry.coordinates[0]}
+                onClose={() => setSelectedFeature(null)}
+                closeOnClick={false}
+                anchor="top"
+              >
+                <div>
+                  <strong>ID:</strong> {selectedFeature.properties.id} <br />
+                  <strong>Plaga:</strong> {selectedFeature.properties.plaga_id} <br />
+                  <strong>Fecha:</strong> {selectedFeature.properties.fecha} <br />
+                  <strong>Lote:</strong> {selectedFeature.properties.lote_id} <br />
+                  <strong>Empleado:</strong> {selectedFeature.properties.empleado_id} <br />
+                  <strong>Zona:</strong> {selectedFeature.properties.zona}
+                </div>
+              </Popup>
+            </>
           )}
+
+
+
 
           {/* pinta las fincas */}
           <Source
@@ -1155,8 +1237,8 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
               id="fincas-line"
               type="line"
               paint={{
-                "line-color": "#FF0000",
-                "line-width": 2
+                "line-color": "black",
+                "line-width": 4
               }}
             />
           </Source>
@@ -1236,11 +1318,29 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
 
           </Source>
 
-
-
-
-
+          <Layer
+            id="plagas-labels"
+            type="symbol"
+            layout={{
+              "text-field": ["get", "plaga_id"],   // 👈 texto que va a mostrar
+              "text-size": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 11,   // en zoom 10 → 11px
+                20, 14    // en zoom 20 → 14px
+              ],
+              "text-offset": [0, 1],         // 🔼 mueve el texto encima del punto
+              "text-anchor": "top",
+              "text-allow-overlap": true,    // 🔥 evita que desaparezcan al chocar
+              "text-ignore-placement": true  // 🔥 fuerza a que siempre se muestren
+            }}
+            paint={{
+              "text-color": "#000",
+              "text-halo-color": "#fff",
+              "text-halo-width": 1
+            }}
+          />
         </Map>
+
         <div className="controls-container">
           <button className="btn-inicio-terreno" onClick={() => setDibujando(!dibujando)}>
             {dibujando ? '🛑 Terminar dibujo' : '🖊️ Iniciar dibujo'}
@@ -1318,7 +1418,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
 
         </div>
 
-      </div>
+      </div >
 
       {!mostrarSidebar && (
         <button
@@ -1327,52 +1427,55 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
         >
           <img className='btnEstadisticasRapidas' src={btnLlamarEstadisticas} alt="Abrir estadísticas" />
         </button>
-      )}
+      )
+      }
 
 
 
-      {mostrarSidebar && (
-        <div className="sidebar-estadisticas">
-          <button
-            className="btn-cerrar-estadisticas"
-            onClick={handleCloseSidebar}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-              fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M18 6L6 18M6 6l12 12"
-                stroke="currentColor"
-                strokeWidth="2"   // 👈 en React es camelCase
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+      {
+        mostrarSidebar && (
+          <div className="sidebar-estadisticas">
+            <button
+              className="btn-cerrar-estadisticas"
+              onClick={handleCloseSidebar}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M18 6L6 18M6 6l12 12"
+                  stroke="currentColor"
+                  strokeWidth="2"   // 👈 en React es camelCase
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
 
-          <h3>📊 Estadísticas Visibles</h3>
-          <p><strong>Total de puntos:</strong> {stats1.total}</p>
+            <h3>📊 Estadísticas Visibles</h3>
+            <p><strong>Total de puntos:</strong> {stats1.total}</p>
 
-          <h4>🦟 Plagas</h4>
-          <ul>
-            {Object.entries(stats1.plagas).map(([plaga, count]) => (
-              <li key={plaga}>{plaga}: {count}</li>
-            ))}
-          </ul>
+            <h4>🦟 Plagas</h4>
+            <ul>
+              {Object.entries(stats1.plagas).map(([plaga, count]) => (
+                <li key={plaga}>{plaga}: {count}</li>
+              ))}
+            </ul>
 
-          <h4>🔬 Estados</h4>
-          <ul>
-            {Object.entries(stats1.estados).map(([estado, count]) => (
-              <li key={estado}>{estado}: {count}</li>
-            ))}
-          </ul>
+            <h4>🔬 Estados</h4>
+            <ul>
+              {Object.entries(stats1.estados).map(([estado, count]) => (
+                <li key={estado}>{estado}: {count}</li>
+              ))}
+            </ul>
 
-          <h4>🧭 Zonas</h4>
-          <ul>
-            {Object.entries(stats1.zonas).map(([zona, count]) => (
-              <li key={zona}>{zona}: {count}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+            <h4>🧭 Zonas</h4>
+            <ul>
+              {Object.entries(stats1.zonas).map(([zona, count]) => (
+                <li key={zona}>{zona}: {count}</li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
 
     </>
   );

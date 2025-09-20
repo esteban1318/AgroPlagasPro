@@ -1135,8 +1135,18 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
             setDibujando(false);
           }}
           onLoad={onLoad}
-          onMouseEnter={() => setSelectedPoint(null)} // Oculta el popup al mover el mouse
-          onMouseLeave={() => setSelectedPoint(null)} // Oculta el popup al mover el mouse
+          interactiveLayerIds={["plagas-layer-default", "plagas-layer-selected"]} // Escuchar eventos de mouse en la capa de puntos
+          onMouseMove={(event) => {
+            const { features, lngLat } = event;
+            if (features && features.length > 0) {
+              setSelectedFeature({
+                geometry: { coordinates: [lngLat.lng, lngLat.lat] },
+                properties: features[0].properties
+              });
+            } else {
+              setSelectedFeature(null);
+            }
+          }}
         >
 
           <Source
@@ -1149,7 +1159,7 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
               type="circle"
               filter={['!=', ['get', 'plaga_id'], selectedPlagaId]}
               paint={{
-                'circle-radius': 3,
+                'circle-radius': 2,
                 'circle-color': '#00FF00',
                 'circle-opacity': 0.6
               }}
@@ -1242,7 +1252,6 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
               }}
             />
           </Source>
-
 
           {/* texto de lotes*/}
           <Source

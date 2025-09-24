@@ -1266,11 +1266,11 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
                   geometry: {
                     type: "Point",
                     coordinates: [
-                      -74.889237, 4.239353
+                      -74.890477, 4.237715
                     ], // otro lote
                   },
                   properties: {
-                    nombre: "Lt.2 tanque",
+                    nombre: "Lt.1",
                   },
                 },
                 {
@@ -1278,13 +1278,13 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
                   geometry: {
                     type: "Point",
                     coordinates: [
-                      -74.890574, 4.237823,
+                      -74.889214, 4.239893
 
 
                     ], // otro lote
                   },
                   properties: {
-                    nombre: "Lt.3 esquina",
+                    nombre: "Lt.3",
                   },
                 },
                 {
@@ -1292,14 +1292,109 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
                   geometry: {
                     type: "Point",
                     coordinates: [
-                      -74.887716, 4.234708
+                      -74.888881, 4.237248
+
+
+
+
                     ], // otro lote
                   },
                   properties: {
-                    nombre: "Lt.3 esquina",
+                    nombre: "Lt.2",
                   },
                 },
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.887978, 4.239344
 
+
+
+
+
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.5",
+                  },
+                },
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.887843, 4.237499
+
+
+
+
+
+
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.4",
+                  },
+                },
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.886806, 4.239695
+
+
+
+
+
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.7",
+                  },
+                },
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.886643, 4.237499
+
+
+
+
+
+
+
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.6",
+                  },
+                },
+                {
+                  type: "Feature",
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      -74.885651, 4.239844
+
+
+
+
+
+
+
+
+
+                    ], // otro lote
+                  },
+                  properties: {
+                    nombre: "Lt.8",
+                  },
+                },
               ],
             }}
           >

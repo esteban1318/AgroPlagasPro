@@ -13,7 +13,7 @@ import {
   Legend
 } from 'chart.js';
 import './estadisticas.css';
-import { getFilteredRecords } from './indexedDB';
+import { getFilteredRecords, getCoordenadasFromIndexedDB } from './indexedDB';
 // Registrar componentes de Chart.js
 ChartJS.register(
   CategoryScale,
@@ -33,7 +33,7 @@ const LemonStatsDashboard = () => {
     { id: 'ACARO_1', nombre: "Ácaro" },
     { id: 'ACARO_2', nombre: "Ácaro de la roya" },
     { id: 'ACARO_3', nombre: "Ácaro blanco" },
-    { id: 'ACARO_4', nombre: "Ácaro rojo" },
+    { id: 'ACARO_4', nombre: "Ácaro tostador" },
     { id: 'ANASTREPHA_1', nombre: 'Anastrepha' },
     { id: 'ARANA_1', nombre: 'Araña roja' },
     { id: 'AFIDOS_1', nombre: "Pulgones" },
@@ -86,7 +86,27 @@ const LemonStatsDashboard = () => {
     { id: 'INVERNADERO', nombre: 'Invernadero' },
     { id: 'VIVERO', nombre: 'Vivero' }
   ], []);
+  //
+  const [searchTerm, setSearchTerm] = useState(""); // para el input de búsqueda
+  const [codigo1, setCodigo1] = useState(""); // select código 1
+  const [codigo2, setCodigo2] = useState(""); // select código 2
+  const [search, setSearch] = useState("");
 
+
+  // 2. Lista de monitorings
+  const monitorings = [
+    { id: 1, code: "MONI-001" },
+    { id: 2, code: "MONI-002" },
+    { id: 3, code: "MONI-003" },
+    { id: 4, code: "MONI-004" },
+    { id: 5, code: "MONI-005" },
+    { id: 6, code: "MONI-006" },
+  ];
+
+  // 3. Filtro
+  const filteredMonitorings = monitorings.filter((m) =>
+    m.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   // Imágenes de fincas (simuladas)
   const fincasImagenes = useMemo(() => [
     { id: 1, nombre: 'Finca Principal - Vista Aérea', url: 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' },
@@ -143,6 +163,7 @@ const LemonStatsDashboard = () => {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const canvasRef = useRef(null);
   const [records, setRecords] = useState([]);
+  const [monitoreos, setMonitoreos] = useState([]);
   // Efecto para aplicar filtros
   useEffect(() => {
     let result = [...pestData];
@@ -571,6 +592,17 @@ const LemonStatsDashboard = () => {
   if (mostAffectedKey) {
     [mostAffectedLote, mostAffectedFinca] = mostAffectedKey.split("|");
   }
+  useEffect(() => {
+    async function fetchData() {
+      const datos = await getCoordenadasFromIndexedDB();
+
+      // Sacar cod_moni_id únicos
+      const unicos = [...new Set(datos.map((d) => d.cod_moni_id))];
+
+      setMonitoreos(unicos);
+    }
+    fetchData();
+  }, []);
 
 
   return (
@@ -763,17 +795,55 @@ const LemonStatsDashboard = () => {
             <h3>Distribución por Severidad</h3>
             <Doughnut data={severityData} options={chartOptions} />
           </div>
+        </div>
+      </div>
+      <div className="moni-container">
+        <div className="form-moni">
+          {/* 🔍 Input de búsqueda */}
+          <input
+            type="text"
+            className="search-input_form-moni"
+            placeholder="Buscar monitor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
 
-          <div className="chart-wrapper card">
-            <h3>Detecciones por Ubicación</h3>
-            <Bar
-              data={locationChartData}
-              options={{
-                ...chartOptions,
-                indexAxis: 'y'
-              }}
-            />
-          </div>
+          {/* 📌 Select Código 1 */}
+          <h3>Código 1:</h3>
+          <select
+            id="codigo1"
+            value={codigo1}
+            onChange={(e) => setCodigo1(e.target.value)}
+            className="select-moni"
+          >
+            <option value="">-- Seleccione --</option>
+            {monitoreos.map((m, idx) => (
+              <option key={idx} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+
+          {/* 📌 Select Código 2 */}
+          <h3>Código 2:</h3>
+          <select
+            id="codigo2"
+            value={codigo2}
+            onChange={(e) => setCodigo2(e.target.value)}
+            className="select-moni"
+          >
+            <option value="">-- Seleccione --</option>
+            {monitoreos.map((m, idx) => (
+              <option key={idx} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+
+
+        <div className="card_codi_moni">
+          <Bar data={locationChartData} options={chartOptions} />
         </div>
       </div>
 

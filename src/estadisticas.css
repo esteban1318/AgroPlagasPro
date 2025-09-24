@@ -677,3 +677,124 @@ tr:hover {
         flex-wrap: wrap;
     }
 }
+
+.moni-container {
+    display: flex;
+    gap: 20px;
+    /* espacio entre columnas */
+    align-items: flex-start;
+    width: 100%;
+    padding: 10px;
+}
+
+/* proporciones en escritorio */
+.form-moni {
+    flex: 0 0 30%;
+    max-width: 30%;
+    height: 49vh;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid var(--primary-color);
+}
+
+.card_codi_moni {
+    flex: 0 0 67%;
+    /* fija el ancho en 69% */
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid var(--primary-color);
+}
+
+.form-moni input {
+    border-radius: 5px;
+    width: 80%;
+    margin-left: 30px;
+    margin-top: 40px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.form-moni input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .moni-container {
+        flex-direction: column;
+        /* en móviles se apilan */
+    }
+
+    .form-moni,
+    .card_codi_moni {
+        flex: 1 1 100%;
+        /* cada uno ocupa todo el ancho */
+        max-width: 100%;
+    }
+}
+
+/* 🎨 Select moderno */
+.select-moni {
+    width: 90%;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #fff;
+
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+
+    appearance: none;
+    /* quitar el estilo nativo del select */
+    outline: none;
+
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* 🚀 Hover */
+.select-moni:hover {
+    border-color: #27ae60;
+    box-shadow: 0 0 6px rgba(39, 174, 96, 0.2);
+}
+
+/* ✨ Focus */
+.select-moni:focus {
+    border-color: #27ae60;
+    box-shadow: 0 0 8px rgba(39, 174, 96, 0.4);
+}
+
+/* 🔽 Icono de flecha personalizado */
+.select-moni {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2327ae60' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px;
+    padding-right: 40px;
+    margin-left: 20px;
+    /* espacio para la flecha */
+}
+
+.form-moni h3 {
+    margin-left: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #27ae60;
+    /* verde para diferenciar */
+}
+
+/* 📱 Responsive */
+@media (max-width: 768px) {
+    .select-moni {
+        font-size: 14px;
+        padding: 10px 12px;
+    }
+}

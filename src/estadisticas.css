@@ -691,7 +691,7 @@ tr:hover {
 .form-moni {
     flex: 0 0 30%;
     max-width: 30%;
-    height: 49vh;
+    height: 68vh;
     background-color: white;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -784,6 +784,7 @@ tr:hover {
 }
 
 .form-moni h3 {
+
     margin-left: 20px;
     font-size: 16px;
     font-weight: 600;
@@ -797,4 +798,51 @@ tr:hover {
         font-size: 14px;
         padding: 10px 12px;
     }
+}
+
+.select-moni_plagas {
+    width: 90%;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    margin-top: 15px;
+    margin-left: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #fff;
+
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+
+    appearance: none;
+    /* quitar el estilo nativo del select */
+    outline: none;
+
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.select-moni_plagas:hover {
+    border-color: #27ae60;
+    box-shadow: 0 0 6px rgba(39, 174, 96, 0.2);
+}
+
+.btn-reset {
+    position: relative;
+    margin-left: 20px;
+    margin-top: 50px;
+    border-radius: 5px;
+    background: var(--danger);
+    color: white;
+    padding: 5px;
+}
+
+.btn-reset:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+
 }

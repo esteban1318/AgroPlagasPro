@@ -95,12 +95,7 @@ const LemonStatsDashboard = () => {
 
   // 2. Lista de monitorings
   const monitorings = [
-    { id: 1, code: "MONI-001" },
-    { id: 2, code: "MONI-002" },
-    { id: 3, code: "MONI-003" },
-    { id: 4, code: "MONI-004" },
-    { id: 5, code: "MONI-005" },
-    { id: 6, code: "MONI-006" },
+
   ];
 
   // 3. Filtro
@@ -436,19 +431,42 @@ const LemonStatsDashboard = () => {
       .filter(item => item.location === loc.nombre)
       .reduce((sum, item) => sum + item.count, 0)
   })).filter(loc => loc.count > 0);
+  // 🔹 Agrupamos los datos por plaga y código
+  const plagasComparacion = [...new Set(records
+    .filter(r => r.plaga_id !== "NINGUNO" && (r.cod_moni_id === codigo1 || r.cod_moni_id === codigo2))
+    .map(r => r.plaga_id)
+  )];
 
+  const sumByPlaga = (codigo, plagaId) => {
+    return records
+      .filter(m => m.cod_moni_id === codigo && m.plaga_id === plagaId)
+      .reduce((sum, m) => sum + (Number(m.marcado) || 0), 0);
+  };
+
+
+  // 🔹 Preparamos los datasets
   const locationChartData = {
-    labels: locationCounts.map(l => l.location),
+    labels: [selectedPestType], // la plaga seleccionada como etiqueta
     datasets: [
       {
-        label: 'Detecciones por ubicación',
-        data: locationCounts.map(l => l.count),
-        backgroundColor: 'rgba(52, 152, 219, 0.6)',
-        borderColor: 'rgb(52, 152, 219)',
+        label: `Marcados en ${codigo1}`,
+        data: [sumByPlaga(codigo1, selectedPestType)],
+        backgroundColor: "rgba(52, 152, 219, 0.6)",
+        borderColor: "rgb(52, 152, 219)",
+        borderWidth: 1
+      },
+      {
+        label: `Marcados en ${codigo2}`,
+        data: [sumByPlaga(codigo2, selectedPestType)],
+        backgroundColor: "rgba(231, 76, 60, 0.6)",
+        borderColor: "rgb(231, 76, 60)",
         borderWidth: 1
       }
     ]
   };
+
+
+
 
   // Opciones para los gráficos
   const chartOptions = {
@@ -800,13 +818,18 @@ const LemonStatsDashboard = () => {
       <div className="moni-container">
         <div className="form-moni">
           {/* 🔍 Input de búsqueda */}
-          <input
-            type="text"
-            className="search-input_form-moni"
-            placeholder="Buscar monitor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <select
+            className="select-moni_plagas"
+            value={selectedPestType}
+            onChange={e => setSelectedPestType(e.target.value)}
+          >
+            <option value="Todos">--seleccione plaga--</option>
+            {plagas.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.nombre}
+              </option>
+            ))}
+          </select>
 
           {/* 📌 Select Código 1 */}
           <h3>Código 1:</h3>
@@ -818,9 +841,10 @@ const LemonStatsDashboard = () => {
           >
             <option value="">-- Seleccione --</option>
             {monitoreos.map((m, idx) => (
-              <option key={idx} value={m}>
+              <option key={idx} value={m.toString()}>
                 {m}
               </option>
+
             ))}
           </select>
 
@@ -834,16 +858,37 @@ const LemonStatsDashboard = () => {
           >
             <option value="">-- Seleccione --</option>
             {monitoreos.map((m, idx) => (
-              <option key={idx} value={m}>
+              <option key={idx} value={m.toString()}>
                 {m}
               </option>
+
             ))}
           </select>
+          {/* 🔄 Botón Reset */}
+          <button
+            type="button"
+            className="btn-reset"
+            onClick={() => {
+              setSelectedPestType("Todos");
+              setCodigo1("");
+              setCodigo2("");
+            }}
+          >
+            Reset
+          </button>
         </div>
 
 
         <div className="card_codi_moni">
-          <Bar data={locationChartData} options={chartOptions} />
+          <Bar data={locationChartData} />
+          {/* 📌 Mostrar diferencia */}
+          {codigo1 && codigo2 && selectedPestType && (
+            <p style={{ marginTop: "1rem", fontWeight: "bold", textAlign: "center" }}>
+              Diferencia de marcado para la plaga seleccionada:{" "}
+              {sumByPlaga(codigo1, selectedPestType) -
+                sumByPlaga(codigo2, selectedPestType)}
+            </p>
+          )}
         </div>
       </div>
 

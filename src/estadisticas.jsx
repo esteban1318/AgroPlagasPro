@@ -111,45 +111,12 @@ const LemonStatsDashboard = () => {
   ], []);
 
   // Generar datos de ejemplo para el cultivo de limón
-  const initialPestData = useMemo(() => {
-    const data = [];
-    const today = new Date();
 
-    for (let i = 0; i < 60; i++) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      const dateString = date.toISOString().split('T')[0];
 
-      const randomPlaga = plagas[Math.floor(Math.random() * plagas.length)];
-      const randomUbicacion = ubicaciones[Math.floor(Math.random() * ubicaciones.length)];
+  const [pestData, setPestData] = useState([]);           // para la UI si quieres
+  const [filteredData, setFilteredData] = useState([]);   // para heatmap / lista
+  const [records, setRecords] = useState([]);             // datos reales (IndexedDB / backend)
 
-      // Hacer más probables algunas plagas comunes en cítricos
-      const commonPests = ['MINADOR_1', 'MOSCA_4', 'ACARO_1', 'AFIDOS_1', 'TRIPS_1'];
-      const isCommon = Math.random() > 0.7;
-      const plagaId = isCommon ? commonPests[Math.floor(Math.random() * commonPests.length)] : randomPlaga.id;
-      const plagaNombre = plagas.find(p => p.id === plagaId)?.nombre || randomPlaga.nombre;
-
-      data.push({
-        id: i + 1,
-        type: plagaNombre,
-        typeId: plagaId,
-        date: dateString,
-        count: Math.floor(Math.random() * 50) + 1,
-        severity: ['Baja', 'Media', 'Alta'][Math.floor(Math.random() * 3)],
-        location: randomUbicacion.nombre,
-        locationId: randomUbicacion.id,
-        coordinates: {
-          x: Math.random() * 80 + 10, // Para posicionamiento en imagen
-          y: Math.random() * 80 + 10  // Para posicionamiento en imagen
-        }
-      });
-    }
-
-    return data;
-  }, [plagas, ubicaciones]);
-
-  const [pestData, setPestData] = useState(initialPestData);
-  const [filteredData, setFilteredData] = useState(initialPestData);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [selectedPestType, setSelectedPestType] = useState("Todos");
   const [selectedLocation, setSelectedLocation] = useState("Todos");
@@ -157,7 +124,7 @@ const LemonStatsDashboard = () => {
   const [drawingMode, setDrawingMode] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const canvasRef = useRef(null);
-  const [records, setRecords] = useState([]);
+
   const [monitoreos, setMonitoreos] = useState([]);
   // Efecto para aplicar filtros
   useEffect(() => {
@@ -238,6 +205,9 @@ const LemonStatsDashboard = () => {
   // Obtener tipos de plagas únicos
   const pestTypes = [...new Set(pestData.map(item => item.type))];
 
+  // --- Calcular la última fecha real de tus datos ---
+
+
   // Calcular estadísticas
   const totalPests = filteredData.reduce((sum, item) => sum + item.count, 0);
   // Función para formatear según agrupación
@@ -275,85 +245,159 @@ const LemonStatsDashboard = () => {
     return acc;
   }, [records]);
 
-  // Ordenar claves (YYYY-MM) y crear etiquetas legibles en español
-  const monthKeys = Object.keys(deteccionesPorMesObj).sort(); // "2024-09", "2025-02", ...
-  const monthLabels = monthKeys.map(k => {
-    const [y, m] = k.split("-");
-    const d = new Date(Number(y), Number(m) - 1, 1);
-    // "Febrero 2025" (primera letra mayúscula)
-    const label = d.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  });
-  const monthData = monthKeys.map(k => deteccionesPorMesObj[k]);
 
   // Chart.js data
   const [agrupacion, setAgrupacion] = useState("mes"); // "dia" | "mes" | "anio"
 
-  // --- Agrupar detecciones según agrupación seleccionada ---
+  const parseDateStr = (s) => {
+    if (!s && s !== 0) return null;
+    let str = String(s).trim();
+
+    // Si ya es ISO yyyy-mm-dd o yyyy/mm/dd
+    let m = str.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+    if (m) {
+      const y = Number(m[1]), mo = Number(m[2]), da = Number(m[3]);
+      return new Date(y, mo - 1, da);
+    }
+
+    // Formatos D/M/YYYY o M/D/YYYY (ambos con / o -)
+    m = str.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+    if (m) {
+      let a = Number(m[1]), b = Number(m[2]), y = Number(m[3]);
+      if (y < 100) y += (y > 50 ? 1900 : 2000);
+
+      // heurística: si el primero > 12 entonces es día (DD/MM)
+      if (a > 12 && b <= 12) {
+        return new Date(y, b - 1, a);
+      }
+      // si el segundo > 12 entonces el segundo es día (MM/DD inusual, convert)
+      if (b > 12 && a <= 12) {
+        return new Date(y, a - 1, b);
+      }
+      // ambiguo (ambos <=12): asume formato DD/MM (común en ES)
+      return new Date(y, b - 1, a);
+    }
+
+    // Si es número (posible serial de Excel) - opcionalmente intentamos convertir
+    const maybeNum = Number(str.replace(',', '.'));
+    if (!Number.isNaN(maybeNum) && maybeNum > 1000) {
+      // heurística simple: tratar como fecha serial Excel (corrige bug 1900)
+      const serial = Math.floor(maybeNum);
+      // Excel serial: day 1 = 1899-12-31, Excel bug: 1900 is considered leap year so offset
+      const offset = serial > 59 ? serial - 1 : serial - 0; // simple ajuste
+      return new Date(1899, 11, 31 + offset);
+    }
+
+    // fallback: intentar new Date() (último recurso)
+    const d = new Date(str);
+    return isNaN(d) ? null : d;
+  };
+
+  // helper para generar clave YYYY-MM-DD sin usar toISOString (evita shift TZ)
+  const toKeyDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const toKeyMonth = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+  // --- calcular ULTIMA FECHA solo de los records reales con parse robusto ---
+  const ultimaFecha = useMemo(() => {
+    if (!records || records.length === 0) return null;
+    const parsed = records
+      .map(r => parseDateStr(r.fecha ?? r.date ?? ""))
+      .filter(d => d && !isNaN(d.getTime()));
+    if (!parsed.length) return null;
+    const maxMs = Math.max(...parsed.map(d => d.getTime()));
+    return new Date(maxMs);
+  }, [records]);
+
+
+  // 2) generar mocks limitados por ultimaFecha (si no hay ultimaFecha devuelve [])
+  const initialPestData = useMemo(() => {
+    if (!ultimaFecha) return [];
+    const data = [];
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(ultimaFecha);
+      d.setDate(ultimaFecha.getDate() - i);
+      const iso = d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+      data.push({
+        id: `mock-${i + 1}`,
+        fecha: iso,                               // <-- usar 'fecha' para ser consistente
+        marcado: Math.floor(Math.random() * 10) + 1,
+        plaga_id: plagas[Math.floor(Math.random() * plagas.length)].id,
+        location: ubicaciones[Math.floor(Math.random() * ubicaciones.length)].nombre,
+        severity: ['Baja', 'Media', 'Alta'][Math.floor(Math.random() * 3)]
+      });
+    }
+    return data;
+  }, [ultimaFecha, plagas, ubicaciones]);
+
+  // 3) combinar reales + simulados
+  const combinedData = useMemo(() => {
+    // ambos arrays deben tener la misma propiedad de fecha: 'fecha'
+    return [...records, ...initialPestData];
+  }, [records, initialPestData]);
+
+  // 4) Agrupar según agrupación (usar combinedData)
   const agrupados = useMemo(() => {
     const acc = {};
+    combinedData.forEach((item) => {
+      if (!item) return;
+      const fechaStr = item.fecha || item.date;
+      if (!fechaStr) return;
 
-    records.forEach((item) => {
-      if (!item || !item.fecha) return;
-
-      // Normalizar marcado a número
       const marcadoRaw = item.marcado ?? item.count ?? 0;
       const marcado = Number(String(marcadoRaw).replace(/[, ]+/g, "").trim()) || 0;
 
-      const d = new Date(item.fecha);
+      const d = new Date(fechaStr);
       if (isNaN(d)) return;
 
       let clave = "";
-      if (agrupacion === "dia") {
-        clave = d.toISOString().slice(0, 10); // YYYY-MM-DD
-      } else if (agrupacion === "mes") {
-        clave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; // YYYY-MM
-      } else if (agrupacion === "anio") {
-        clave = `${d.getFullYear()}`; // YYYY
-      }
+      if (agrupacion === "dia") clave = d.toISOString().slice(0, 10);         // YYYY-MM-DD
+      else if (agrupacion === "mes") clave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+      else clave = `${d.getFullYear()}`;                                     // YYYY
 
       acc[clave] = (acc[clave] || 0) + marcado;
     });
-
     return acc;
-  }, [records, agrupacion]);
+  }, [combinedData, agrupacion]);
 
-  // --- Ordenar claves ---
-  const clavesOrdenadas = Object.keys(agrupados).sort();
+  // 5) ordenar claves y recortar hasta ultimaFecha (si existe)
+  let clavesOrdenadas = Object.keys(agrupados).sort();
+  if (ultimaFecha) {
+    if (agrupacion === "dia") {
+      const ultimaClave = ultimaFecha.toISOString().slice(0, 10);
+      clavesOrdenadas = clavesOrdenadas.filter(k => k <= ultimaClave);
+    } else if (agrupacion === "mes") {
+      const ultimaClave = `${ultimaFecha.getFullYear()}-${String(ultimaFecha.getMonth() + 1).padStart(2, '0')}`;
+      clavesOrdenadas = clavesOrdenadas.filter(k => k <= ultimaClave);
+    } else {
+      const ultimaClave = `${ultimaFecha.getFullYear()}`;
+      clavesOrdenadas = clavesOrdenadas.filter(k => k <= ultimaClave);
+    }
+  }
 
-  // --- Crear etiquetas legibles ---
+  // 6) etiquetas (igual que antes)
   const etiquetas = clavesOrdenadas.map((k) => {
     if (agrupacion === "dia") {
       const d = new Date(k);
-      return d.toLocaleDateString("es-ES", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
+      return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
     } else if (agrupacion === "mes") {
       const [y, m] = k.split("-");
       const d = new Date(Number(y), Number(m) - 1, 1);
-      return d.toLocaleDateString("es-ES", {
-        month: "long",
-        year: "numeric",
-      });
+      return d.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
     } else {
-      return k; // año simple
+      return k;
     }
   });
 
-  // --- Datos para Chart.js ---
+  // 7) lineChartData (usa clavesOrdenadas/agrupados)
   const lineChartData = {
     labels: etiquetas,
     datasets: [
       {
         label:
-          agrupacion === "dia"
-            ? "Detecciones por día"
-            : agrupacion === "mes"
-              ? "Detecciones por mes"
+          agrupacion === "dia" ? "Detecciones por día"
+            : agrupacion === "mes" ? "Detecciones por mes"
               : "Detecciones por año",
-        data: clavesOrdenadas.map((k) => agrupados[k]),
+        data: clavesOrdenadas.map(k => agrupados[k] || 0),
         borderColor: "rgb(46, 204, 113)",
         backgroundColor: "rgba(46, 204, 113, 0.2)",
         tension: 0.1,
@@ -622,6 +666,26 @@ const LemonStatsDashboard = () => {
     fetchData();
   }, []);
 
+  // DEBUG - temporal: inspecciona raw dates y parseos
+  useEffect(() => {
+    if (!records || records.length === 0) return;
+    const raw = records.map(r => r.fecha ?? r.date ?? "").filter(Boolean);
+    console.log('RAW fechas sample (primeros 50):', raw.slice(0, 50));
+    // intenta parsear con Date (poca fiabilidad) solo para inspeccionar
+    const parsed = raw.map(s => ({ raw: s, parsed: new Date(s).toString() }));
+    console.log('PARSED (new Date):', parsed.slice(0, 50));
+    // encontrar raw que dan NaN con new Date
+    const nan = parsed.filter(p => p.parsed.includes('Invalid'));
+    console.log('Invalid parse count:', nan.length, nan.slice(0, 10));
+    // calc max según new Date (ignora Invalid)
+    const validDates = raw.map(s => new Date(s)).filter(d => !isNaN(d));
+    if (validDates.length) {
+      const max = new Date(Math.max(...validDates));
+      console.log('MAX (new Date) from records =>', max.toISOString());
+    } else {
+      console.log('No valid dates found with new Date()');
+    }
+  }, [records]);
 
   return (
     <div className="lemon-stats-dashboard">

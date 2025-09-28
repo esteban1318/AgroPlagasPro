@@ -250,6 +250,7 @@ const LemonStatsDashboard = () => {
   const [agrupacion, setAgrupacion] = useState("mes"); // "dia" | "mes" | "anio"
 
   const parseDateStr = (s) => {
+
     if (!s && s !== 0) return null;
     let str = String(s).trim();
 
@@ -291,6 +292,14 @@ const LemonStatsDashboard = () => {
     // fallback: intentar new Date() (último recurso)
     const d = new Date(str);
     return isNaN(d) ? null : d;
+  };
+  const dateInRange = (d, start, end) => {
+    if (!d) return false;
+    const y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
+    const ds = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const de = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    const dd = new Date(y, m, day);
+    return dd >= ds && dd <= de;
   };
 
   // helper para generar clave YYYY-MM-DD sin usar toISOString (evita shift TZ)
@@ -416,45 +425,45 @@ const LemonStatsDashboard = () => {
 
 
   // Preparar datos para el gráfico de plagas más comunes (top 7)
+  // 1. Contar todas las plagas
   const pestCounts = Object.values(
     records.reduce((acc, r) => {
+      if (!r.plaga_id || String(r.plaga_id).toUpperCase() === "NINGUNO") return acc; // opcional: excluir "NINGUNO"
       if (!acc[r.plaga_id]) acc[r.plaga_id] = { id: r.plaga_id, count: 0 };
-      acc[r.plaga_id].count += 1; // o acc[r.plaga_id].count += r.marcado si quieres sumar cantidad
+      acc[r.plaga_id].count += 1; // si quieres sumar cantidad marcada: acc[r.plaga_id].count += r.marcado
       return acc;
     }, {})
   );
-  // Ordenar de mayor a menor
+
+  // 2. Ordenar de mayor a menor
   pestCounts.sort((a, b) => b.count - a.count);
 
+  // 3. Colores base (se repiten si hay más plagas)
+  const colors = [
+    'rgba(241, 196, 15, 0.8)',
+    'rgba(52, 152, 219, 0.8)',
+    'rgba(46, 204, 113, 0.8)',
+    'rgba(155, 89, 182, 0.8)',
+    'rgba(230, 126, 34, 0.8)',
+    'rgba(231, 76, 60, 0.8)',
+    'rgba(149, 165, 166, 0.8)'
+  ];
+
+  const getColor = (i) => colors[i % colors.length];
+
+  // 4. Preparar datos para Chart.js
   const barChartData = {
     labels: pestCounts.map(p => p.id),
     datasets: [
       {
         label: 'Total por tipo de plaga',
         data: pestCounts.map(p => p.count),
-        backgroundColor: [
-          'rgba(241, 196, 15, 0.8)',
-          'rgba(52, 152, 219, 0.8)',
-          'rgba(46, 204, 113, 0.8)',
-          'rgba(155, 89, 182, 0.8)',
-          'rgba(230, 126, 34, 0.8)',
-          'rgba(231, 76, 60, 0.8)',
-          'rgba(149, 165, 166, 0.8)'
-        ],
-        borderColor: [
-          'rgb(241, 196, 15)',
-          'rgb(52, 152, 219)',
-          'rgb(46, 204, 113)',
-          'rgb(155, 89, 182)',
-          'rgb(230, 126, 34)',
-          'rgb(231, 76, 60)',
-          'rgb(149, 165, 166)'
-        ],
+        backgroundColor: pestCounts.map((_, i) => getColor(i)),
+        borderColor: pestCounts.map((_, i) => getColor(i).replace('0.8', '1')),
         borderWidth: 1
       }
     ]
   };
-
   const severityData = {
     labels: ['Alta', 'Media', 'Baja'],
     datasets: [
@@ -627,6 +636,7 @@ const LemonStatsDashboard = () => {
   });
 
   // Encontrar la finca con más detecciones
+
   let mostAffectedFarm = null;
   let mostAffectedCount = 0;
   for (const farm in farmCounts) {
@@ -639,14 +649,26 @@ const LemonStatsDashboard = () => {
   const lotesCounts = {};
   filteredRecords.forEach(r => {
     const lote = r.lote_id || "Sin lote";
-    const finca = r.cod_moni_id || "Sin finca";
+
+    // Mapeo de linea a finca
+    const fincaMap = {
+      '1': 'San Martin',
+      '3': 'Yulima',
+      '4': 'Santa Barbara',
+      '5': 'Las Villas',
+      '6': 'La Esperanza'
+    };
+
+    const linea = r.linea?.toString() || '';
+    const finca = fincaMap[linea[0]] || 'Sin finca'; // toma el primer dígito
+
     const key = `${lote}|${finca}`;
     lotesCounts[key] = (lotesCounts[key] || 0) + 1;
   });
-
   // inicializamos valores seguros
   let mostAffectedKey = null;
   let mostAffectedLoteCount = 0;
+
 
   for (const key in lotesCounts) {
     if (lotesCounts[key] > mostAffectedLoteCount) {
@@ -654,13 +676,13 @@ const LemonStatsDashboard = () => {
       mostAffectedLoteCount = lotesCounts[key];
     }
   }
-
   let mostAffectedLote = "N/A";
   let mostAffectedFinca = "N/A";
 
   if (mostAffectedKey) {
     [mostAffectedLote, mostAffectedFinca] = mostAffectedKey.split("|");
   }
+  // Cargar coordenadas únicas de IndexedDB para el filtro de monitoreos  
   useEffect(() => {
     async function fetchData() {
       const datos = await getCoordenadasFromIndexedDB();
@@ -672,27 +694,43 @@ const LemonStatsDashboard = () => {
     }
     fetchData();
   }, []);
+  //
+  // Dentro de tu componente
+  const [trendPercentage, setTrendPercentage] = useState(0);
+  const [trendUp, setTrendUp] = useState(true);
 
-  // DEBUG - temporal: inspecciona raw dates y parseos
   useEffect(() => {
-    if (!records || records.length === 0) return;
-    const raw = records.map(r => r.fecha ?? r.date ?? "").filter(Boolean);
-    console.log('RAW fechas sample (primeros 50):', raw.slice(0, 50));
-    // intenta parsear con Date (poca fiabilidad) solo para inspeccionar
-    const parsed = raw.map(s => ({ raw: s, parsed: new Date(s).toString() }));
-    console.log('PARSED (new Date):', parsed.slice(0, 50));
-    // encontrar raw que dan NaN con new Date
-    const nan = parsed.filter(p => p.parsed.includes('Invalid'));
-    console.log('Invalid parse count:', nan.length, nan.slice(0, 10));
-    // calc max según new Date (ignora Invalid)
-    const validDates = raw.map(s => new Date(s)).filter(d => !isNaN(d));
-    if (validDates.length) {
-      const max = new Date(Math.max(...validDates));
-      console.log('MAX (new Date) from records =>', max.toISOString());
-    } else {
-      console.log('No valid dates found with new Date()');
-    }
-  }, [records]);
+    const calculateTrend = async () => {
+      const currentStart = new Date("2025-09-01");
+      const currentEnd = new Date("2025-09-30");
+      const prevStart = new Date("2025-08-01");
+      const prevEnd = new Date("2025-08-31");
+
+      // Llama a tu función que ya filtra con parseDateStr internamente
+      const currentRecords = await getFilteredRecords({ startDate: currentStart, endDate: currentEnd });
+      const prevRecords = await getFilteredRecords({ startDate: prevStart, endDate: prevEnd });
+
+      const countValid = (records) =>
+        records.filter(r => r.plaga_id && r.plaga_id.toLowerCase() !== "ninguno").length;
+
+      const totalCurrent = countValid(currentRecords);
+      const totalPrev = countValid(prevRecords);
+
+      let trendPercentage = 0;
+      let trendUp = true;
+
+      if (totalPrev > 0) {
+        trendPercentage = ((totalCurrent - totalPrev) / totalPrev) * 100;
+        trendUp = trendPercentage >= 0;
+      }
+
+      setTrendPercentage(trendPercentage);
+      setTrendUp(trendUp);
+    };
+
+    calculateTrend();
+  }, []);
+
 
   return (
     <div className="lemon-stats-dashboard">
@@ -798,9 +836,10 @@ const LemonStatsDashboard = () => {
             <div className="stat-content">
               <h3>Total de detecciones geográficas</h3>
               <p className="stat-number">{total}</p>
-              <p className="stat-trend">
-                <i className="fas fa-arrow-up"></i> 12% vs período anterior
-              </p>
+
+
+
+
             </div>
           </div>
 
@@ -814,6 +853,9 @@ const LemonStatsDashboard = () => {
               <p className="stat-subtext">
                 {mostCommonCount} detecciones
               </p>
+              <p className="stat-trend">
+                <i className={`fas fa-arrow-${trendUp ? 'up' : 'down'}`}></i> {trendPercentage}% vs período anterior
+              </p>
             </div>
 
           </div>
@@ -824,12 +866,13 @@ const LemonStatsDashboard = () => {
             </div>
             <div className="stat-content">
               <h3>Finca Más Afectada</h3>
-              <p className="stat-text">{mostAffectedFarm || "N/A"}</p>
+              <p className="stat-text">{mostAffectedFinca || "N/A"}</p>
               <p className="stat-subtext">
-                {mostAffectedCount} detecciones
+                {mostAffectedLoteCount} detecciones
               </p>
             </div>
           </div>
+
 
 
           <div className="stat-card card">

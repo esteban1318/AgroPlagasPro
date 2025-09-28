@@ -353,6 +353,12 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
     const file = fileEvent.target.files[0];
     if (!file) return;
 
+    // ✅ Validar extensión CSV
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      alert('Por favor sube un archivo CSV válido.');
+      return;
+    }
+
     setIsLoading(true);
     setUploadedFeatures([]); // Limpiar datos previos del mapa
 
@@ -360,65 +366,87 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       type: 'module',
     });
 
+    // ✅ Manejo seguro de mensajes del Worker
     worker.onmessage = async (messageEvent) => {
-      if (messageEvent.data.error) {
-        console.error('Error en Web Worker:', messageEvent.data.error);
-        alert('Error al procesar el CSV: ' + messageEvent.data.error);
-        setIsLoading(false);
-        worker.terminate();
-        return;
-      }
+      try {
+        if (messageEvent.data.error) throw new Error(messageEvent.data.error);
 
-      const features = messageEvent.data.features;
-      if (features.length === 0) {
-        alert('No se encontraron datos válidos en el CSV.');
-        setIsLoading(false);
-        worker.terminate();
-        return;
-      }
-
-      // ✅ Datos simplificados para renderizar el mapa o guardar en localStorage si lo deseas
-      const simplified = features.map(f => ({
-        x: f.properties.x,
-        y: f.properties.y,
-        plaga_id: f.properties.plaga_id,
-      }));
-
-      // ✅ Datos completos para IndexedDB y backend
-      const allProperties = features.map(f => f.properties);
-
-      // ✅ Guardar solo en IndexedDB (más seguro para datos grandes)
-      await saveCoordenadasToIndexedDB(allProperties);
-
-      // ✅ Enviar al backend
-      const username = localStorage.getItem('username');
-      if (username) {
-        try {
-          const response = await fetch(`https://agroplagaspro-backend-1.onrender.com/api/coordenadas/${username}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(allProperties),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Error al guardar coordenadas en backend (${response.status})`);
-          }
-
-          console.log('🛰 Coordenadas guardadas en el backend exitosamente.');
-        } catch (err) {
-          console.error('❌ Error al guardar coordenadas en el backend:', err);
+        const features = messageEvent.data.features;
+        if (!Array.isArray(features) || features.length === 0) {
+          alert('No se encontraron datos válidos en el CSV.');
+          setIsLoading(false);
+          worker.terminate();
+          return;
         }
-      } else {
-        console.error('⚠️ Usuario no encontrado en localStorage');
+
+        // ✅ Filtrar coordenadas inválidas
+        const validFeatures = features.filter(f => {
+          const x = Number(f.properties.x);
+          const y = Number(f.properties.y);
+          return !isNaN(x) && !isNaN(y);
+        });
+
+        if (validFeatures.length === 0) {
+          alert('El CSV no contiene coordenadas válidas.');
+          setIsLoading(false);
+          worker.terminate();
+          return;
+        }
+
+        // ✅ Datos simplificados para renderizar el mapa
+        const simplified = validFeatures.map(f => ({
+          x: f.properties.x,
+          y: f.properties.y,
+          plaga_id: f.properties.plaga_id,
+        }));
+
+        setUploadedFeatures(simplified);
+
+        // ✅ Guardar en IndexedDB
+        const allProperties = validFeatures.map(f => f.properties);
+        await saveCoordenadasToIndexedDB(allProperties);
+
+        // ✅ Enviar al backend
+        const username = localStorage.getItem('username');
+        if (username) {
+          try {
+            const response = await fetch(
+              `https://agroplagaspro-backend-1.onrender.com/api/coordenadas/${username}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(allProperties),
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`Error al guardar coordenadas en backend (${response.status})`);
+            }
+
+            console.log('🛰 Coordenadas guardadas en el backend exitosamente.');
+          } catch (err) {
+            console.error('❌ Error al guardar coordenadas en el backend:', err);
+          }
+        } else {
+          console.error('⚠️ Usuario no encontrado en localStorage');
+        }
+
+        // ✅ Renderizar el mapa
+        await renderFeaturesToMap(validFeatures);
+
+        // ✅ Terminar Worker
+        worker.terminate();
+        setIsLoading(false);
+
+      } catch (err) {
+        console.error('Error procesando datos del CSV:', err);
+        alert('Error al procesar el CSV.');
+        setIsLoading(false);
+        worker.terminate();
       }
-
-      // ✅ Terminar worker
-      worker.terminate();
-
-      // ✅ Renderizar el mapa (usa features originales con geometría)
-      await renderFeaturesToMap(features);
     };
 
+    // ✅ Manejo de errores del Worker
     worker.onerror = (error) => {
       console.error('Error en Web Worker:', error);
       alert('Error al procesar el CSV: ' + error.message);
@@ -426,12 +454,27 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
       worker.terminate();
     };
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const csvText = e.target.result;
-      worker.postMessage(csvText);
-    };
-    reader.readAsText(file, 'UTF-8');
+    // ✅ Leer archivo CSV de manera segura
+    try {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const csvText = e.target.result;
+          worker.postMessage(csvText);
+        } catch (err) {
+          console.error('Error enviando CSV al Worker:', err);
+          alert('Error al procesar el CSV.');
+          setIsLoading(false);
+          worker.terminate();
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    } catch (err) {
+      console.error('Error leyendo archivo CSV:', err);
+      alert('Error al leer el archivo CSV.');
+      setIsLoading(false);
+      worker.terminate();
+    }
   }, [renderFeaturesToMap]);
 
 
@@ -1179,6 +1222,30 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
                 'circle-opacity': 1
               }}
             />
+
+   {markerStyles[selectedPlagaId]?.heatmapEnabled && (
+  <Layer
+    id="plagas-heatmap"
+    type="heatmap"
+    source="plagas-source"
+    filter={['==', ['get', 'plaga_id'], selectedPlagaId]}
+    paint={{
+      "heatmap-weight": ["interpolate", ["linear"], ["get", "count"], 0, 0, 6, 1],
+      "heatmap-intensity": 1,
+      // ✅ Usar el radio dinámico desde markerStyles
+      "heatmap-radius": markerStyles[selectedPlagaId]?.heatmapRadius || 20,
+      "heatmap-color": [
+        "interpolate",
+        ["linear"],
+        ["heatmap-density"],
+        0, "rgba(0,0,255,0)",
+        0.5, "rgba(0,255,0,0.5)",
+        1, "rgba(255,0,0,0.8)"
+      ]
+    }}
+  />
+)}
+
           </Source>
           <pre>{JSON.stringify(features, null, 2)}</pre>
 
@@ -1380,14 +1447,6 @@ const MapView = ({ polygonData, coordinates, filteredFeatures, markerStyles, sel
                     type: "Point",
                     coordinates: [
                       -74.885651, 4.239844
-
-
-
-
-
-
-
-
 
                     ], // otro lote
                   },

@@ -338,26 +338,33 @@ const LemonStatsDashboard = () => {
   // 4) Agrupar según agrupación (usar combinedData)
   const agrupados = useMemo(() => {
     const acc = {};
-    combinedData.forEach((item) => {
+    combinedData.forEach(item => {
       if (!item) return;
-      const fechaStr = item.fecha || item.date;
-      if (!fechaStr) return;
 
-      const marcadoRaw = item.marcado ?? item.count ?? 0;
-      const marcado = Number(String(marcadoRaw).replace(/[, ]+/g, "").trim()) || 0;
+      // ❌ Excluir registros sin plaga
+      if (!item.plaga_id || String(item.plaga_id).toUpperCase() === "NINGUNO") return;
 
-      const d = new Date(fechaStr);
-      if (isNaN(d)) return;
+      const fechaStr = item.fecha ?? item.date ?? "";
+      const d = parseDateStr(fechaStr);
+      if (!d || isNaN(d.getTime())) return;
 
       let clave = "";
-      if (agrupacion === "dia") clave = d.toISOString().slice(0, 10);         // YYYY-MM-DD
-      else if (agrupacion === "mes") clave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
-      else clave = `${d.getFullYear()}`;                                     // YYYY
+      if (agrupacion === "dia") clave = toKeyDay(d);
+      else if (agrupacion === "mes") clave = toKeyMonth(d);
+      else clave = `${d.getFullYear()}`;
+
+      const marcado =
+        Number(
+          String(item.marcado ?? item.count ?? 0)
+            .replace(/[, ]+/g, "")
+            .trim()
+        ) || 0;
 
       acc[clave] = (acc[clave] || 0) + marcado;
     });
     return acc;
   }, [combinedData, agrupacion]);
+
 
   // 5) ordenar claves y recortar hasta ultimaFecha (si existe)
   let clavesOrdenadas = Object.keys(agrupados).sort();
@@ -848,7 +855,6 @@ const LemonStatsDashboard = () => {
         <h3>Evolución Temporal de Detecciones</h3>
 
         {/* Selector de agrupación */}
-
         <div className="selector-container">
           <label htmlFor="agrupacion">Ver por:</label>
           <select
@@ -862,8 +868,33 @@ const LemonStatsDashboard = () => {
           </select>
         </div>
 
-        <Line data={lineChartData} />
+        <Line
+          data={lineChartData}
+          options={{
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let value = context.parsed.y;
+                    return `${Math.round(value)} detecciones`; // ✅ sin decimales
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                ticks: {
+                  callback: function (value) {
+                    return Math.round(value); // ✅ eje Y sin decimales
+                  }
+                }
+              }
+            }
+          }}
+        />
       </div>
+
       <div className="charts-section">
         <h2><i className="fas fa-chart-area"></i> Visualización de Datos</h2>
         <div className="charts-container">

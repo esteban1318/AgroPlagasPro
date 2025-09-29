@@ -10,7 +10,8 @@ import {
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 } from 'chart.js';
 import './estadisticas.css';
 import { getFilteredRecords, getCoordenadasFromIndexedDB } from './indexedDB';
@@ -24,7 +25,8 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const LemonStatsDashboard = () => {
@@ -405,33 +407,95 @@ const LemonStatsDashboard = () => {
   });
 
   // 7) lineChartData (usa clavesOrdenadas/agrupados)
-  const lineChartData = {
-    labels: etiquetas,
-    datasets: [
-      {
-        label:
-          agrupacion === "dia"
-            ? "Detecciones por día"
-            : agrupacion === "mes"
-              ? "Detecciones por mes"
-              : "Detecciones por año",
-        data: clavesOrdenadas.map((k) => agrupados[k] || 0),
-        borderColor: "rgb(46, 204, 113)",   // línea verde
-        pointBackgroundColor: "rgb(231, 76, 60)",
-        pointBorderColor: "rgb(231, 76, 60)",
-        tension: 0.4,
-        fill: true, // <- activa el relleno
-        backgroundColor: "rgba(46, 204, 113, 0.3)", // ✅ área debajo de la línea
-      },
-    ],
-  };
+ // Data
+const lineChartData = {
+  labels: etiquetas,
+  datasets: [
+    {
+      label:
+        agrupacion === "dia"
+          ? "Detecciones por día"
+          : agrupacion === "mes"
+            ? "Detecciones por mes"
+            : "Detecciones por año",
+      data: clavesOrdenadas.map((k) => agrupados[k] || 0),
 
-  const lineChartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
+      // 🎨 estilo línea
+      borderColor: "rgba(34, 197, 94, 1)", // verde moderno
+      borderWidth: 3,
+      tension: 0.4, // curva suave
+
+      // 🔴 estilo puntos
+      pointBackgroundColor: "#fff",
+      pointBorderColor: "rgba(34, 197, 94, 1)",
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      pointHoverBackgroundColor: "rgba(34,197,94,1)",
+      pointHoverBorderColor: "#fff",
+
+      // 🌈 área degradada debajo
+      fill: 'origin',
+      backgroundColor: (context) => {
+        const chart = context.chart;
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return "rgba(34, 197, 94, 0.2)";
+        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+        gradient.addColorStop(0, "rgba(34,197,94,0.25)");
+        gradient.addColorStop(1, "rgba(34,197,94,0)");
+        return gradient;
+      },
     },
-  };
+  ],
+};
+
+// Options
+const lineChartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      backgroundColor: "rgba(0,0,0,0.8)",
+      titleColor: "#fff",
+      bodyColor: "#fff",
+      titleFont: { size: 14, weight: "bold" },
+      bodyFont: { size: 13 },
+      padding: 10,
+      displayColors: false,
+      callbacks: {
+        label: function (context) {
+          return `${Math.round(context.parsed.y)} detecciones`;
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false,
+      },
+      ticks: {
+        color: "#999",
+        font: { size: 12 },
+      },
+    },
+    y: {
+      grid: {
+        color: "rgba(200,200,200,0.1)",
+      },
+      ticks: {
+        color: "#999",
+        font: { size: 12 },
+        callback: function (value) {
+          return Math.round(value);
+        },
+      },
+    },
+  },
+};
+
 
 
   // Preparar datos para el gráfico de plagas más comunes (top 7)

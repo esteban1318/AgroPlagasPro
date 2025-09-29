@@ -410,18 +410,28 @@ const LemonStatsDashboard = () => {
     datasets: [
       {
         label:
-          agrupacion === "dia" ? "Detecciones por día"
-            : agrupacion === "mes" ? "Detecciones por mes"
+          agrupacion === "dia"
+            ? "Detecciones por día"
+            : agrupacion === "mes"
+              ? "Detecciones por mes"
               : "Detecciones por año",
-        data: clavesOrdenadas.map(k => agrupados[k] || 0),
-        borderColor: "rgb(46, 204, 113)",
-        backgroundColor: "rgba(46, 204, 113, 0.2)",
-        tension: 0.1,
-        fill: true,
+        data: clavesOrdenadas.map((k) => agrupados[k] || 0),
+        borderColor: "rgb(46, 204, 113)",   // línea verde
+        pointBackgroundColor: "rgb(231, 76, 60)",
+        pointBorderColor: "rgb(231, 76, 60)",
+        tension: 0.4,
+        fill: true, // <- activa el relleno
+        backgroundColor: "rgba(46, 204, 113, 0.3)", // ✅ área debajo de la línea
       },
     ],
   };
 
+  const lineChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+    },
+  };
 
 
   // Preparar datos para el gráfico de plagas más comunes (top 7)
@@ -911,31 +921,9 @@ const LemonStatsDashboard = () => {
           </select>
         </div>
 
-        <Line
-          data={lineChartData}
-          options={{
-            responsive: true,
-            plugins: {
-              tooltip: {
-                callbacks: {
-                  label: function (context) {
-                    let value = context.parsed.y;
-                    return `${Math.round(value)} detecciones`; // ✅ sin decimales
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                ticks: {
-                  callback: function (value) {
-                    return Math.round(value); // ✅ eje Y sin decimales
-                  }
-                }
-              }
-            }
-          }}
-        />
+        <Line data={lineChartData} options={lineChartOptions} />
+
+
       </div>
 
       <div className="charts-section">
